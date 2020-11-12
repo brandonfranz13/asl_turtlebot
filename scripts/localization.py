@@ -100,7 +100,13 @@ class LocalizationVisualizer:
 
     def scan_callback(self, msg):
         if self.EKF:
-            self.scans.append((msg.header.stamp,
+	    perturb = np.random.randint(10)
+	    if perturb ==5:
+		self.scans.append((msg.header.stamp,
+                               np.array([i*msg.angle_increment + msg.angle_min for i in range(int(len(msg.ranges)/2.))]),
+                               np.array(msg.ranges[:int(len(msg.ranges)/2.)])))
+            else: 
+		self.scans.append((msg.header.stamp,
                                np.array([i*msg.angle_increment + msg.angle_min for i in range(len(msg.ranges))]),
                                np.array(msg.ranges)))
 
@@ -138,6 +144,9 @@ class LocalizationVisualizer:
         x0 = np.array([self.latest_pose.position.x,
                        self.latest_pose.position.y,
                        get_yaw_from_quaternion(self.latest_pose.orientation)])
+	# Per-tur-bation-tion-tion
+	#x0 += np.random.randn(3)
+
         self.EKF_time = self.latest_pose_time
         if self.params.mc:
             x0s = np.tile(np.expand_dims(x0, 0), (self.params.num_particles, 1))
@@ -166,6 +175,10 @@ class LocalizationVisualizer:
                 self.OLC.transition_update(self.current_control,
                                            next_timestep.to_time() - self.EKF_time.to_time())
                 self.EKF_time, self.current_control = next_timestep, next_control
+
+		# perturb-burb-baburb-ation
+		#self.current_control += np.random.randn(2)*2
+
                 label = "EKF" if not self.params.mc else "MCL"
                 self.tfBroadcaster.sendTransform(create_transform_msg(
                     (self.EKF.x[0], self.EKF.x[1], 0),
