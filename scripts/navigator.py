@@ -54,6 +54,9 @@ class Navigator:
         self.map_probs = []
         self.occupancy = None
         self.occupancy_updated = False
+        
+        # delivery requests
+        self.delivery_request = None
 
         # plan parameters
         self.plan_resolution =  0.1
@@ -106,6 +109,7 @@ class Navigator:
         rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
         rospy.Subscriber('/map_metadata', MapMetaData, self.map_md_callback)
         rospy.Subscriber('/cmd_nav', Pose2D, self.cmd_nav_callback)
+        rospy.Subscriber('/delivery_request', String, self.delivery_request_callback)
 
         print "finished init"
         
@@ -163,6 +167,13 @@ class Navigator:
         cmd_vel.linear.x = 0.0
         cmd_vel.angular.z = 0.0
         self.nav_vel_pub.publish(cmd_vel)
+        
+    def delivery_request_callback(self, msg):
+        """
+        Callback for the delivery request from request_publisher.py. 
+        Message format is a string of comma-separated items to pickup and deliver
+        """
+        self.delivery_request = msg.data.split(',').strip()
 
     def near_goal(self):
         """
