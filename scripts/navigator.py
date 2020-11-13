@@ -110,6 +110,7 @@ class Navigator:
         rospy.Subscriber('/map_metadata', MapMetaData, self.map_md_callback)
         rospy.Subscriber('/cmd_nav', Pose2D, self.cmd_nav_callback)
         rospy.Subscriber('/delivery_request', String, self.delivery_request_callback)
+        rospy.Subscriber('/detector/cat', DetectedObject, self.detect_cat_callback)
 
         print "finished init"
         
@@ -179,7 +180,21 @@ class Navigator:
         if isWaiting():
             self.delivery_request = [request.strip() for request in msg.data.split(',')]
             print("Order Received. Out for delivery!")
-
+            
+    def detect_cat_callback(self, msg):
+        """
+        Callback for detecting a cat.
+        Message format is DetectedObject:
+            uint32 id
+            string name
+            float64 confidence
+            float64 distance
+            float64 thetaleft
+            float64 thetaright
+            float64[] corners
+        """        
+        print("Miao")
+        
     def near_goal(self):
         """
         returns whether the robot is close enough in position to the goal to

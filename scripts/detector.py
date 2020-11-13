@@ -262,7 +262,7 @@ class Detector:
 
         ########## Code starts here ##########
         # TODO: Extract camera intrinsic parameters.
-	print(msg.K)
+        print(msg.K)
         self.cx = msg.K[2]
         self.cy = msg.K[5]
         self.fx = msg.K[0]
