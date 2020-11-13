@@ -3,6 +3,7 @@
 import rospy
 from nav_msgs.msg import OccupancyGrid, MapMetaData, Path
 from geometry_msgs.msg import Twist, Pose2D, PoseStamped
+from asl_turtlebot.msg import DetectedObject
 from std_msgs.msg import String
 import tf
 import numpy as np
