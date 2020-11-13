@@ -173,7 +173,12 @@ class Navigator:
         Callback for the delivery request from request_publisher.py. 
         Message format is a string of comma-separated items to pickup and deliver
         """
-        self.delivery_request = [request.strip() for request in msg.data.split(',')]
+        def isWaiting():
+            return self.delivery_request == None
+        
+        if isWaiting():
+            self.delivery_request = [request.strip() for request in msg.data.split(',')]
+            print("Order Received. Out for delivery!")
 
     def near_goal(self):
         """
