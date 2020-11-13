@@ -114,7 +114,7 @@ class Navigator:
         self.pose_controller.k1 = config["k1"]
         self.pose_controller.k2 = config["k2"]
         self.pose_controller.k3 = config["k3"]
-	self.spline_alpha = config["alpha"]
+	#self.spline_alpha = config["alpha"]
         return config
 
     def cmd_nav_callback(self, data):
