@@ -113,8 +113,8 @@ class Navigator:
         self.delivery_mode = False #0 is EXPLORATION, 1 is DELIVERY
         self.fully_explored = False #whether or not space is judged as fully explored
         self.has_meowed = False #whether or not we have meowed/cheered at a currrently visible cat/beer
-        self.hasDetectedCat = False #Set to True every time cat detection callback is called, i.e. cat detected by detector
-        self.hasDetectedStopSign = False #Set to True every time stop sign detection callback is called, i.e. stop sign detected
+        self.detectedStopSign = False
+        self.detectedCat = False
         self.stop_time = rospy.get_param("~stop_time", 3.) # Time to stop at a stop sign
         self.stop_min_dist = rospy.get_param("~stop_min_dist", 0.5) # Minimum distance from a stop sign to obey it
         self.pickup_time = rospy.get_param("~pickup_time", 4.) # Time taken to pick food up at a vendor between 3 and 5 seconds
@@ -382,11 +382,7 @@ class Navigator:
     def has_crossed(self):
         """ checks if crossing maneuver is over (stop sign no longer visible)"""
 
-        return self.mode == Mode.CROSS and not self.hasDetectedStopSign
-
-    def has_meowed(self):
-        """ checks if cat is still visible """
-        return self.hasDetectedCat
+        return self.mode == Mode.CROSS and not self.hasDetectedStopSign()
 
     def stop_sign_detected_callback(self, msg):
         """ callback for when the detector has found a stop sign. Note that
@@ -394,7 +390,7 @@ class Navigator:
 
         # distance of the stop sign
         dist = msg.distance
-        self.hasDetectedStopSign = True
+        self.detectedStopSign = True
         # if close enough and in track or park mode, stop
         if self.mode == Mode.TRACK or self.mode == Mode.PARK:
             if dist > 0 and dist < self.params.stop_min_dist:
@@ -406,7 +402,7 @@ class Navigator:
 
         # distance of the cat
         dist = msg.distance
-        self.hasDetectedCat = True
+        self.detectedCat = True
         # if cat detected and in track or park mode, respond
         if self.mode == Mode.TRACK or self.mode == Mode.PARK and dist > 0:
             self.init_cat()
@@ -483,11 +479,11 @@ class Navigator:
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
 
                 ## For cats, beers and stop signs
-                elif self.hasDetectedStopSign:#we have detected a stop sign!
+                elif self.detectedStopSign:#we have detected a stop sign!
                     self.init_stop_sign() #start stop sign maneuver
-                elif self.hasDetectedCat and not self.has_meowed: #we have detected a cat! or beer!
+                elif self.detectedCat and not self.has_meowed: #we have detected a cat! or beer!
                     self.init_cat() #start "meow" message broadcast
-                elif self.has_meowed and not self.hasDetectedCat: #we are not detecting a cat or beer and have already responded
+                elif self.has_meowed and not self.detectedCat: #we are not detecting a cat or beer and have already responded
                     self.has_meowed = False #reset in case a new one is detected
 
                 ## For marking complete exploration
@@ -514,11 +510,13 @@ class Navigator:
                     self.switch_mode(Mode.IDLE) #await further instructions
 
                 """ For cats, beers and stop signs """
-                elif self.hasDetectedStopSign:#we have detected a stop sign!
+                elif self.detectedStopSign:#we have detected a stop sign!
                     self.init_stop_sign() #start stop sign maneuver
-                elif self.hasDetectedCat and not self.has_meowed: #we have detected a cat! or beer!
+                    
+                elif self.detectedCat and not self.has_meowed: #we have detected a cat! or beer!
                     self.init_cat() #start "meow" message broadcast
-                elif self.has_meowed and not self.hasDetectedCat: #we are not detecting a cat or beer and have already responded
+                    
+                elif self.has_meowed and not self.detectedCat: #we are not detecting a cat or beer and have already responded
                     self.has_meowed = False #reset in case a new one is detected
 
                 """For marking complete exploration"""
@@ -532,17 +530,18 @@ class Navigator:
                     self.stay_idle() #don't move yet
                 else: #timer has run out
                     self.init_crossing() #start crossing
-
+                
             elif self.mode == Mode.CROSS:
                 # Crossing an intersection
                 if not self.has_crossed(): #stop sign is still visible
                         self.pass_sign() #keep moving and ignoring sign
                 else:
                     self.mode = Mode.TRACK #resume movement
-                    self.hasDetectedStopSign = False #allow another stop sign to be detected
-
+                    self.detectedStopSign = False #reset detection
+                    
             elif self.mode == Mode.MEOW:
                 self.messages.publish(mensaje) #publish the miao message to a dedicated topic
+                self.detectedCat = False # reset detection
                 self.has_meowed = True #to ensure we do not respond repeatedly t
                 self.mode = Mode.TRACK # resume movement (without aligning with starting angle)
 
