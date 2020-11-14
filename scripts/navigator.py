@@ -507,13 +507,7 @@ class Navigator:
                     self.theta_g = None
                     self.switch_mode(Mode.IDLE) #await further instructions
 
-                # For cats, beers and stop signs """
-                elif self.detectedStopSign:#we have detected a stop sign!
-                    self.init_stop_sign() #start stop sign maneuver
-                    
-                elif self.detectedCat and not self.has_meowed: #we have detected a cat! or beer!
-                    self.init_cat() #start "meow" message broadcast
-                    
+                # For cats, beers and stop signs """                    
                 elif self.has_meowed and not self.detectedCat: #we are not detecting a cat or beer and have already responded
                     self.has_meowed = False #reset in case a new one is detected
 
