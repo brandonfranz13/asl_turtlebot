@@ -350,7 +350,6 @@ class Navigator:
 	## new functions & functions from supervisor.py
 	def init_stop_sign(self):
         """ initiates a stop sign maneuver """
-
         self.stop_sign_start = rospy.get_rostime()
         self.mode = Mode.STOP
 
@@ -361,25 +360,21 @@ class Navigator:
 
 	def init_crossing(self):
         """ initiates an intersection crossing maneuver """
-
         self.cross_start = rospy.get_rostime()
         self.mode = Mode.CROSS
 
     def has_stopped(self):
         """ checks if stop sign maneuver is over """
-
         return self.mode == Mode.STOP and \
                rospy.get_rostime() - self.stop_sign_start > rospy.Duration.from_sec(self.params.stop_time)
 
 	def has_picked_up(self):
         """ checks if pickup maneuver is over """
-
         return self.mode == Mode.PICKUP and \
                rospy.get_rostime() - self.pickup_start > rospy.Duration.from_sec(self.params.pickup_time)
 
 	def has_crossed(self):
         """ checks if crossing maneuver is over (stop sign no longer visible)"""
-
         return self.mode == Mode.CROSS and not self.stop_sign_detected_callback
 
 	def has_meowed(self):
@@ -389,7 +384,6 @@ class Navigator:
 	def stop_sign_detected_callback(self, msg):
         """ callback for when the detector has found a stop sign. Note that
         a distance of 0 can mean that the lidar did not pickup the stop sign at all """
-
         # distance of the stop sign
         dist = msg.distance
 
@@ -401,7 +395,6 @@ class Navigator:
 	def cat_detected_callback(self, msg):
         """ callback for when the detector has found a cat (or beer). A distance
 		of 0 can mean the item was not detected """
-
         # distance of the cat
         dist = msg.distance
 
@@ -431,7 +424,6 @@ class Navigator:
 
 	def stay_idle(self):
         """ sends zero velocity to stay put """
-
         vel_g_msg = Twist()
         self.cmd_vel_publisher.publish(vel_g_msg)
 
