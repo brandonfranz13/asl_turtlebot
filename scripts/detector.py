@@ -4,13 +4,10 @@ import rospy
 import os
 # watch out on the order for the next two imports lol
 from tf import TransformListener
-try:
-    import tensorflow as tf
-except:
-    pass
+import tensorflow as tf
 import numpy as np
-from sensor_msgs.msg import Image, CameraInfo, LaserScan
-from asl_turtlebot.msg import DetectedObject
+from sensor_msgs.msg import CompressedImage, Image, CameraInfo, LaserScan
+from asl_turtlebot.msg import DetectedObject, DetectedObjectList
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import math
@@ -59,7 +56,7 @@ class Detector:
         rospy.init_node('turtlebot_detector', anonymous=True)
         self.params = DetectorParams()
         self.bridge = CvBridge()
-
+		self.detected_objects_pub = rospy.Publisher('/detector/objects', DetectedObjectList, queue_size=10)
         if self.params.use_tf:
             self.detection_graph = tf.Graph()
             with self.detection_graph.as_default():
@@ -73,7 +70,10 @@ class Detector:
                 self.d_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
                 self.d_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
                 self.num_d = self.detection_graph.get_tensor_by_name('num_detections:0')
-            self.sess = tf.Session(graph=self.detection_graph)
+                config = tf.ConfigProto()
+                config.gpu_options.allow_growth = True
+            self.sess = tf.Session(graph=self.detection_graph, config=config)
+            # self.sess = tf.Session(graph=self.detection_graph)
 
         # camera and laser parameters that get updated
         self.cx = 0.
@@ -89,6 +89,7 @@ class Detector:
         self.tf_listener = TransformListener()
         rospy.Subscriber('/camera/image_raw', Image, self.camera_callback, queue_size=1)
         rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
+		rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
         rospy.Subscriber('/scan', LaserScan, self.laser_callback)
 
     def run_detection(self, img):
@@ -96,8 +97,6 @@ class Detector:
 
         image_np = self.load_image_into_numpy_array(img)
         image_np_expanded = np.expand_dims(image_np, axis=0)
-        print("LOOK HERE")
-        print(self.params.use_tf)
         if self.params.use_tf:
             # uses MobileNet to detect objects in images
             # this works well in the real world, but requires
@@ -139,10 +138,7 @@ class Detector:
 
         for i in range(num):
             if scores[i] >= self.params.min_score:
-		print('FILTER STUFF:')
-                print(i)
-		print(scores[i])
-		f_scores.append(scores[i])
+				f_scores.append(scores[i])
                 f_boxes.append(boxes[i])
                 f_classes.append(int(classes[i]))
                 f_num += 1
@@ -167,10 +163,10 @@ class Detector:
         x = (u-self.cx)/self.fx  # u = fx*x+cx
         y = (v-self.cy)/self.fy
         z = 1.
-	norm = np.linalg.norm([x,y,z])
-	x = x/norm
-	y = y/norm
-	z = z/norm
+		norm = np.linalg.norm([x,y,z])
+		x = x/norm
+		y = y/norm
+		z = z/norm
         ########## Code ends here ##########
 
         return x, y, z
@@ -217,8 +213,6 @@ class Detector:
         if num > 0:
             # some objects were detected
             for (box,sc,cl) in zip(boxes, scores, classes):
-		print(cl)
-		print('something obnoxious')
                 ymin = int(box[0]*img_h)
                 xmin = int(box[1]*img_w)
                 ymax = int(box[2]*img_h)
@@ -246,14 +240,11 @@ class Detector:
                 if not self.object_publishers.has_key(cl):
                     self.object_publishers[cl] = rospy.Publisher('/detector/'+self.object_labels[cl],
                         DetectedObject, queue_size=10)
-		    print('new topic should be created')
 
                 # publishes the detected object and its location
-		print('your mom has deez nuts')
                 object_msg = DetectedObject()
                 object_msg.id = cl
                 object_msg.name = self.object_labels[cl]
-		print(self.object_labels[cl])
                 object_msg.confidence = sc
                 object_msg.distance = dist
                 object_msg.thetaleft = thetaleft
@@ -261,6 +252,12 @@ class Detector:
                 object_msg.corners = [ymin,xmin,ymax,xmax]
                 self.object_publishers[cl].publish(object_msg)
 
+                # add detected object to detected objects list
+                detected_objects.objects.append(self.object_labels[cl])
+                detected_objects.ob_msgs.append(object_msg)
+
+            self.detected_objects_pub.publish(detected_objects)
+            
         # displays the camera image
         cv2.imshow("Camera", img_bgr8)
         cv2.waitKey(1)
@@ -274,9 +271,9 @@ class Detector:
         # TODO: Extract camera intrinsic parameters.
         print(msg.K)
         self.cx = msg.K[2]
-        self.cy = msg.K[5]
+        self.cy = msg.K[6]
         self.fx = msg.K[0]
-        self.fy = msg.K[4]
+        self.fy = msg.K[5]
         ########## Code ends here ##########
 
     def laser_callback(self, msg):
