@@ -519,7 +519,7 @@ class Navigator:
                 elif self.has_meowed and not self.detectedCat: #we are not detecting a cat or beer and have already responded
                     self.has_meowed = False #reset in case a new one is detected
 
-                """For marking complete exploration"""
+                #For marking complete exploration"""
                 elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not at the goal
                     if not goal_origin(): #if initial position is not the current goal
                         self.switch_mode(Mode.RTB)
