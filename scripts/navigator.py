@@ -433,7 +433,7 @@ class Navigator:
         """ sends zero velocity to stay put """
 
         vel_g_msg = Twist()
-        self.cmd_vel_publisher.publish(vel_g_msg)
+        self.nav_vel_pub.publish(vel_g_msg)
 
     def pass_sign(self):
         """ move, ignoring stop sign """
