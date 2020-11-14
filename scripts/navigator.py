@@ -20,11 +20,11 @@ from asl_turtlebot.cfg import NavigatorConfig
 
 # state machine modes, not all implemented
 class Mode(Enum):
-    IDLE = 0 #agent is awaiting instructions
-    ALIGN = 1 #NAV part 1: heading controller
+	IDLE = 0 #agent is awaiting instructions
+	ALIGN = 1 #NAV part 1: heading controller
 	TRACK = 2 #NAV part 2: trajectory tracker
-    PARK = 3 #NAV part 3: pose controller
-	STOP = 4 #stopped in front of a stop sign
+	PARK = 3 #NAV part 3: pose controller
+   	STOP = 4 #stopped in front of a stop sign
 	CROSS = 5 #moving while ignoring stop sign
 	MEOW = 6 #broadcasting message upon detecting a cat
 	PICKUP = 7 #pausing at a goal location
@@ -109,30 +109,30 @@ class Navigator:
 
         self.cfg_srv = Server(NavigatorConfig, self.dyn_cfg_callback)
 
-		# indicators for state machine additions
-		self.delivery_mode = False #0 is EXPLORATION, 1 is DELIVERY
-		self.fully_explored = False #whether or not space is judged as fully explored
-		self.has_meowed = False #whether or not we have meowed/cheered at a currrently visible cat/beer
+	# indicators for state machine additions
+	self.delivery_mode = False #0 is EXPLORATION, 1 is DELIVERY
+	self.fully_explored = False #whether or not space is judged as fully explored
+	self.has_meowed = False #whether or not we have meowed/cheered at a currrently visible cat/beer
         self.stop_time = rospy.get_param("~stop_time", 3.) # Time to stop at a stop sign
         self.stop_min_dist = rospy.get_param("~stop_min_dist", 0.5) # Minimum distance from a stop sign to obey it
         self.pickup_time = rospy.get_param("~pickup_time", 4.) # Time taken to pick food up at a vendor between 3 and 5 seconds
 
-		# list of goals, in order
-		self.goal_list = [] #implement as a list of three-element tuples, with the last tuple being all zeroes (original position)
+	# list of goals, in order
+	self.goal_list = [] #implement as a list of three-element tuples, with the last tuple being all zeroes (original position)
 
         rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
         rospy.Subscriber('/map_metadata', MapMetaData, self.map_md_callback)
         rospy.Subscriber('/cmd_nav', Pose2D, self.cmd_nav_callback)
 
-		# Stop sign detector
+	# Stop sign detector
         rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
 
-		# Cat detector
-		rospy.Subscriber('/detector/beer', DetectedObject, self.cat_detected_callback) #detecting beer, not cat
+	# Cat detector
+	rospy.Subscriber('/detector/beer', DetectedObject, self.cat_detected_callback) #detecting beer, not cat
 
-		# Publisher for "meow" message
-		self.messages = rospy.Publisher('/mensaje',mensaje,queue_size=10)
-		mensaje = "Saluti!" #message to broadcast in "meow" state
+	# Publisher for "meow" message
+	self.messages = rospy.Publisher('/mensaje',mensaje,queue_size=10)
+	mensaje = "Saluti!" #message to broadcast in "meow" state
 
         print "finished init"
 
@@ -394,27 +394,27 @@ class Navigator:
         dist = msg.distance
 
         # if close enough and in track or park mode, stop
-		if self.mode == Mode.TRACK or self.mode == Mode.PARK:
+	if self.mode == Mode.TRACK or self.mode == Mode.PARK:
         	if dist > 0 and dist < self.params.stop_min_dist:
-            	self.init_stop_sign()
+        		self.init_stop_sign()
 
 	def cat_detected_callback(self, msg):
         """ callback for when the detector has found a cat (or beer). A distance
 		of 0 can mean the item was not detected """
 
-        # distance of the cat
-        dist = msg.distance
+        	# distance of the cat
+        	dist = msg.distance
 
-        # if cat detected and in track or park mode, respond
+        	# if cat detected and in track or park mode, respond
 		if self.mode == Mode.TRACK or self.mode == Mode.PARK and dist > 0:
-            self.init_cat()
+            		self.init_cat()
 
 	def at_goal(self):
         """
         returns whether the robot has reached the goal position with enough
         accuracy to return to idle state
         """
-        return (linalg.norm(np.array([self.x-self.x_g, self.y-self.y_g])) < self.near_thresh and abs(wrapToPi(self.theta - self.theta_g)) < self.at_thresh_theta)
+        	return (linalg.norm(np.array([self.x-self.x_g, self.y-self.y_g])) < self.near_thresh and abs(wrapToPi(self.theta - self.theta_g)) < self.at_thresh_theta)
 
 	def at_origin(self):
 		"""
@@ -432,20 +432,20 @@ class Navigator:
 	def stay_idle(self):
         """ sends zero velocity to stay put """
 
-        vel_g_msg = Twist()
-        self.cmd_vel_publisher.publish(vel_g_msg)
+        	vel_g_msg = Twist()
+        	self.cmd_vel_publisher.publish(vel_g_msg)
 
 	def pass_sign(self):
         """ move, ignoring stop sign """
-        if self.near_goal():
-            V, om = self.pose_controller.compute_control(self.x, self.y, self.theta, t)
-        else:
-            V, om = self.traj_controller.compute_control(self.x, self.y, self.theta, t)
+        	if self.near_goal():
+            		V, om = self.pose_controller.compute_control(self.x, self.y, self.theta, t)
+        	else:
+            		V, om = self.traj_controller.compute_control(self.x, self.y, self.theta, t)
 
-        cmd_vel = Twist()
-        cmd_vel.linear.x = V
-        cmd_vel.angular.z = om
-        self.nav_vel_pub.publish(cmd_vel)
+        	cmd_vel = Twist()
+        	cmd_vel.linear.x = V
+        	cmd_vel.angular.z = om
+        	self.nav_vel_pub.publish(cmd_vel)
 
     def run(self):
         rate = rospy.Rate(10) # 10 Hz
@@ -468,15 +468,15 @@ class Navigator:
             # some transitions handled by callbacks
             if self.mode == Mode.IDLE: #awaiting instructions
                 #pass
-				if self.fully_explored and not self.delivery_mode: #in exploration mode, we are notified the environment is fully explored
-					self.mode = Mode.RTB #return to initial position for transition to delivery mode
+		if self.fully_explored and not self.delivery_mode: #in exploration mode, we are notified the environment is fully explored
+			self.mode = Mode.RTB #return to initial position for transition to delivery mode
 
             elif self.mode == Mode.ALIGN: #rotating to face the direction indicated by the start of the path
                 if self.aligned():
                 	self.current_plan_start_time = rospy.get_rostime()
                 	self.switch_mode(Mode.TRACK)
 
-			elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
+		elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
                 if self.near_goal(): #near goal
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
 
