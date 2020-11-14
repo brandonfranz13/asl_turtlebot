@@ -392,7 +392,7 @@ class Navigator:
 
         # distance of the stop sign
         dist = msg.distance
-        self.detectedStopSign = True
+
         # if close enough and in track or park mode, stop
         if self.mode == Mode.TRACK or self.mode == Mode.PARK:
             if dist > 0 and dist < self.stop_min_dist:
@@ -404,7 +404,7 @@ class Navigator:
 
         # distance of the cat
         dist = msg.distance
-        self.detectedCat = True
+
         # if cat detected and in track or park mode, respond
         if self.mode == Mode.TRACK or self.mode == Mode.PARK and dist > 0:
             self.init_cat()
@@ -481,10 +481,6 @@ class Navigator:
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
 
                 ## For cats, beers and stop signs
-                elif self.detectedStopSign:#we have detected a stop sign!
-                    self.init_stop_sign() #start stop sign maneuver
-                elif self.detectedCat and not self.has_meowed: #we have detected a cat! or beer!
-                    self.init_cat() #start "meow" message broadcast
                 elif self.has_meowed and not self.detectedCat: #we are not detecting a cat or beer and have already responded
                     self.has_meowed = False #reset in case a new one is detected
 
@@ -539,11 +535,9 @@ class Navigator:
                         self.pass_sign() #keep moving and ignoring sign
                 else:
                     self.mode = Mode.TRACK #resume movement
-                    self.detectedStopSign = False #reset detection
                     
             elif self.mode == Mode.MEOW:
                 self.messages.publish(mensaje) #publish the miao message to a dedicated topic
-                self.detectedCat = False # reset detection
                 self.has_meowed = True #to ensure we do not respond repeatedly t
                 self.mode = Mode.TRACK # resume movement (without aligning with starting angle)
 
