@@ -66,7 +66,7 @@
         <param name="om_max" value="$(arg om_max)"/>
         <param name="v_max" value="$(arg v_max)"/>
   </node>
-  <node pkg="asl_turtlebot" type="detector.py" name="turtlebot_detector" output="screen" />
+  <node pkg="asl_turtlebot" type="detector_mobilenet.py" name="turtlebot_detector" output="screen" />
   <node pkg="asl_turtlebot" type="request_publisher.py" name="PavoneCart_requests" />
   <node pkg="asl_turtlebot" type="gazebo_plot.py" name="gazebo_plot" />
   <node pkg="asl_turtlebot" type="goal_commander.py" name="goal_commander" output="screen"/>

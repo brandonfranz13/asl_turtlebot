@@ -56,7 +56,7 @@ class Detector:
         rospy.init_node('turtlebot_detector', anonymous=True)
         self.params = DetectorParams()
         self.bridge = CvBridge()
-		self.detected_objects_pub = rospy.Publisher('/detector/objects', DetectedObjectList, queue_size=10)
+	self.detected_objects_pub = rospy.Publisher('/detector/objects', DetectedObjectList, queue_size=10)
         if self.params.use_tf:
             self.detection_graph = tf.Graph()
             with self.detection_graph.as_default():
@@ -89,7 +89,7 @@ class Detector:
         self.tf_listener = TransformListener()
         rospy.Subscriber('/camera/image_raw', Image, self.camera_callback, queue_size=1, buff_size=2**24)
         rospy.Subscriber('/camera/image/compressed', CompressedImage, self.compressed_camera_callback, queue_size=1, buff_size=2**24)
-		rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
+	rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
         rospy.Subscriber('/scan', LaserScan, self.laser_callback)
 
     def run_detection(self, img):
@@ -138,7 +138,7 @@ class Detector:
 
         for i in range(num):
             if scores[i] >= self.params.min_score:
-				f_scores.append(scores[i])
+		f_scores.append(scores[i])
                 f_boxes.append(boxes[i])
                 f_classes.append(int(classes[i]))
                 f_num += 1
@@ -163,10 +163,10 @@ class Detector:
         x = (u-self.cx)/self.fx  # u = fx*x+cx
         y = (v-self.cy)/self.fy
         z = 1.
-		norm = np.linalg.norm([x,y,z])
-		x = x/norm
-		y = y/norm
-		z = z/norm
+	norm = np.linalg.norm([x,y,z])
+	x = x/norm
+	y = y/norm
+	z = z/norm
         ########## Code ends here ##########
 
         return x, y, z
@@ -204,7 +204,6 @@ class Detector:
             img_bgr8 = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         except CvBridgeError as e:
             print(e)
-
         self.camera_common(img_laser_ranges, img, img_bgr8)
 
     def compressed_camera_callback(self, msg):
@@ -277,7 +276,7 @@ class Detector:
                 detected_objects.ob_msgs.append(object_msg)
 
             self.detected_objects_pub.publish(detected_objects)
-            
+
         # displays the camera image
         cv2.imshow("Camera", img_bgr8)
         cv2.waitKey(1)

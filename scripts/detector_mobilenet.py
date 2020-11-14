@@ -57,9 +57,9 @@ class Detector:
                 self.d_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
                 self.d_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
                 self.num_d = self.detection_graph.get_tensor_by_name('num_detections:0')
-                config = tf.ConfigProto()
+                config = tf.compat.v1.ConfigProto()
                 config.gpu_options.allow_growth = True
-            self.sess = tf.Session(graph=self.detection_graph, config=config)
+            self.sess = tf.compat.v1.Session(graph=self.detection_graph, config=config)
             # self.sess = tf.Session(graph=self.detection_graph)
 
         # camera and laser parameters that get updated
@@ -74,10 +74,14 @@ class Detector:
         self.object_labels = load_object_labels(PATH_TO_LABELS)
 
         self.tf_listener = TransformListener()
-        rospy.Subscriber('/raspicam_node/image_raw', Image, self.camera_callback, queue_size=1, buff_size=2**24)
-        rospy.Subscriber('/raspicam_node/image/compressed', CompressedImage, self.compressed_camera_callback, queue_size=1, buff_size=2**24)
-        rospy.Subscriber('/raspicam_node/camera_info', CameraInfo, self.camera_info_callback)
-        rospy.Subscriber('/scan', LaserScan, self.laser_callback)
+        #rospy.Subscriber('/raspicam_node/image_raw', Image, self.camera_callback, queue_size=1, buff_size=2**24)
+        #rospy.Subscriber('/raspicam_node/image/compressed', CompressedImage, self.compressed_camera_callback, queue_size=1, buff_size=2**24)
+        #rospy.Subscriber('/raspicam_node/camera_info', CameraInfo, self.camera_info_callback)
+        rospy.Subscriber('/camera/image_raw', Image, self.camera_callback, queue_size=1, buff_size=2**24)
+        rospy.Subscriber('/camera/image/compressed', CompressedImage, self.compressed_camera_callback, queue_size=1, buff_size=2**24)
+        rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
+
+	rospy.Subscriber('/scan', LaserScan, self.laser_callback)
 
     def run_detection(self, img):
         """ runs a detection method in a given image """
@@ -179,7 +183,6 @@ class Detector:
 
     def camera_callback(self, msg):
         """ callback for camera images """
-
         # save the corresponding laser scan
         img_laser_ranges = list(self.laser_ranges)
 
@@ -261,10 +264,10 @@ class Detector:
                 detected_objects.ob_msgs.append(object_msg)
 
             self.detected_objects_pub.publish(detected_objects)
-
-        # displays the camera image
-        #cv2.imshow("Camera", img_bgr8)
-        #cv2.waitKey(1)
+        
+	# displays the camera image
+        cv2.imshow("Camera", img_bgr8)
+        cv2.waitKey(1)
 
     def camera_info_callback(self, msg):
         """ extracts relevant camera intrinsic parameters from the camera_info message.
