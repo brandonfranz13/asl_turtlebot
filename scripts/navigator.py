@@ -340,8 +340,8 @@ class Navigator:
         self.current_plan_start_time = rospy.get_rostime()
         self.current_plan_duration = t_new[-1]
 
-        self.th_init = traj_new[0,2]
-        self.heading_controller.load_goal(wrapToPi(self.th_init+np.pi))
+        self.th_init = traj_new[0,2] + np.pi
+        self.heading_controller.load_goal(wrapToPi(self.th_init))
 
         if not self.aligned():
             rospy.loginfo("Not aligned with start direction")
