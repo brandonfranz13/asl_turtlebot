@@ -3,10 +3,6 @@
 import rospy
 from nav_msgs.msg import OccupancyGrid, MapMetaData, Path
 from geometry_msgs.msg import Twist, Pose2D, PoseStamped
-from asl_turtlebot.msg import DetectedObject
-
-from tf_broadcast.msg import Vendor
-
 from std_msgs.msg import String
 import tf
 import numpy as np
@@ -24,10 +20,16 @@ from asl_turtlebot.cfg import NavigatorConfig
 
 # state machine modes, not all implemented
 class Mode(Enum):
-    IDLE = 0
-    ALIGN = 1
-    TRACK = 2
-    PARK = 3
+    IDLE = 0 #agent is awaiting instructions
+    ALIGN = 1 #NAV part 1: heading controller
+	TRACK = 2 #NAV part 2: trajectory tracker
+    PARK = 3 #NAV part 3: pose controller
+	STOP = 4 #stopped in front of a stop sign
+	CROSS = 5 #moving while ignoring stop sign
+	MEOW = 6 #broadcasting message upon detecting a cat
+	PICKUP = 7 #pausing at a goal location
+	RTB = 8 #set goal to initial position to prepare for deliveries
+	START_DELIVERY = 9 #change mode from EXPLORATION to DELIVERY
 
 class Navigator:
     """
@@ -41,7 +43,7 @@ class Navigator:
         # current state
         self.x = 0.0
         self.y = 0.0
-        self.theta = 0.0
+        self.theta = 0.0 #initial state is set as point of origin for x, y and theta
 
         # goal state
         self.x_g = None
@@ -58,9 +60,6 @@ class Navigator:
         self.map_probs = []
         self.occupancy = None
         self.occupancy_updated = False
-        
-        # delivery requests
-        self.delivery_request = None
 
         # plan parameters
         self.plan_resolution =  0.1
@@ -70,7 +69,7 @@ class Navigator:
         self.current_plan_start_time = rospy.get_rostime()
         self.current_plan_duration = 0
         self.plan_start = [0.,0.]
-        
+
         # Robot limits
         self.v_max = rospy.get_param("~v_max", 0.2)    # maximum velocity
         self.om_max = rospy.get_param("~om_max", 0.4)   # maximum angular velocity
@@ -85,7 +84,7 @@ class Navigator:
         self.at_thresh_theta = 0.05
 
         # trajectory smoothing
-        self.spline_alpha = 0.3
+        self.spline_alpha = 0.15
         self.traj_dt = 0.1
 
         # trajectory tracking controller parameters
@@ -110,20 +109,39 @@ class Navigator:
 
         self.cfg_srv = Server(NavigatorConfig, self.dyn_cfg_callback)
 
+		# indicators for state machine additions
+		self.delivery_mode = False #0 is EXPLORATION, 1 is DELIVERY
+		self.fully_explored = False #whether or not space is judged as fully explored
+		self.has_meowed = False #whether or not we have meowed/cheered at a currrently visible cat/beer
+        self.stop_time = rospy.get_param("~stop_time", 3.) # Time to stop at a stop sign
+        self.stop_min_dist = rospy.get_param("~stop_min_dist", 0.5) # Minimum distance from a stop sign to obey it
+        self.pickup_time = rospy.get_param("~pickup_time", 4.) # Time taken to pick food up at a vendor between 3 and 5 seconds
+
+		# list of goals, in order
+		self.goal_list = [] #implement as a list of three-element tuples, with the last tuple being all zeroes (original position)
+
         rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
         rospy.Subscriber('/map_metadata', MapMetaData, self.map_md_callback)
         rospy.Subscriber('/cmd_nav', Pose2D, self.cmd_nav_callback)
-        rospy.Subscriber('/delivery_request', String, self.delivery_request_callback)
-        rospy.Subscriber('/detector/cat', DetectedObject, self.detect_cat_callback)
+
+		# Stop sign detector
+        rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
+
+		# Cat detector
+		rospy.Subscriber('/detector/beer', DetectedObject, self.cat_detected_callback) #detecting beer, not cat
+
+		# Publisher for "meow" message
+		self.messages = rospy.Publisher('/mensaje',mensaje,queue_size=10)
+		mensaje = "Saluti!" #message to broadcast in "meow" state
 
         print "finished init"
-        
+
     def dyn_cfg_callback(self, config, level):
         rospy.loginfo("Reconfigure Request: k1:{k1}, k2:{k2}, k3:{k3}".format(**config))
         self.pose_controller.k1 = config["k1"]
         self.pose_controller.k2 = config["k2"]
         self.pose_controller.k3 = config["k3"]
-	#self.spline_alpha = config["alpha"]
+	self.spline_alpha = config["alpha"]
         return config
 
     def cmd_nav_callback(self, data):
@@ -172,33 +190,7 @@ class Navigator:
         cmd_vel.linear.x = 0.0
         cmd_vel.angular.z = 0.0
         self.nav_vel_pub.publish(cmd_vel)
-        
-    def delivery_request_callback(self, msg):
-        """
-        Callback for the delivery request from request_publisher.py. 
-        Message format is a string of comma-separated items to pickup and deliver
-        """
-        def isWaiting():
-            return self.delivery_request == None
-        
-        if isWaiting():
-            self.delivery_request = [request.strip() for request in msg.data.split(',')]
-            print("Order Received. Out for delivery!")
-            
-    def detect_cat_callback(self, msg):
-        """
-        Callback for detecting a cat.
-        Message format is DetectedObject:
-            uint32 id
-            string name
-            float64 confidence
-            float64 distance
-            float64 thetaleft
-            float64 thetaright
-            float64[] corners
-        """        
-        print("Miao")
-        
+
     def near_goal(self):
         """
         returns whether the robot is close enough in position to the goal to
@@ -206,20 +198,13 @@ class Navigator:
         """
         return linalg.norm(np.array([self.x-self.x_g, self.y-self.y_g])) < self.near_thresh
 
-    def at_goal(self):
-        """
-        returns whether the robot has reached the goal position with enough
-        accuracy to return to idle state
-        """
-        return (linalg.norm(np.array([self.x-self.x_g, self.y-self.y_g])) < self.near_thresh and abs(wrapToPi(self.theta - self.theta_g)) < self.at_thresh_theta)
-
     def aligned(self):
         """
         returns whether robot is aligned with starting direction of path
         (enough to switch to tracking controller)
         """
         return (abs(wrapToPi(self.theta - self.th_init)) < self.theta_start_thresh)
-        
+
     def close_to_plan_start(self):
         return (abs(self.x - self.plan_start[0]) < self.start_pos_thresh and abs(self.y - self.plan_start[1]) < self.start_pos_thresh)
 
@@ -315,12 +300,12 @@ class Navigator:
         rospy.loginfo("Planning Succeeded")
 
         planned_path = problem.path
-        
+
 
         # Check whether path is too short
         if len(planned_path) < 4:
             rospy.loginfo("Path too short to track")
-            self.switch_mode(Mode.PARK)
+            self.switch_mode(Mode.PARK) #switch to pose controller
             return
 
         # Smooth and generate a trajectory
@@ -362,6 +347,106 @@ class Navigator:
         rospy.loginfo("Ready to track")
         self.switch_mode(Mode.TRACK)
 
+	## new functions & functions from supervisor.py
+	def init_stop_sign(self):
+        """ initiates a stop sign maneuver """
+
+        self.stop_sign_start = rospy.get_rostime()
+        self.mode = Mode.STOP
+
+	def init_cat(self):
+		"""initiates a message broadcast"""
+		self.cat_start = rospy.get_rostime()
+		self.mode = Mode.MEOW
+
+	def init_crossing(self):
+        """ initiates an intersection crossing maneuver """
+
+        self.cross_start = rospy.get_rostime()
+        self.mode = Mode.CROSS
+
+    def has_stopped(self):
+        """ checks if stop sign maneuver is over """
+
+        return self.mode == Mode.STOP and \
+               rospy.get_rostime() - self.stop_sign_start > rospy.Duration.from_sec(self.params.stop_time)
+
+	def has_picked_up(self):
+        """ checks if pickup maneuver is over """
+
+        return self.mode == Mode.PICKUP and \
+               rospy.get_rostime() - self.pickup_start > rospy.Duration.from_sec(self.params.pickup_time)
+
+	def has_crossed(self):
+        """ checks if crossing maneuver is over (stop sign no longer visible)"""
+
+        return self.mode == Mode.CROSS and not self.stop_sign_detected_callback
+
+	def has_meowed(self):
+		""" checks if cat is still visible """
+		return self.cat_detected_callback
+
+	def stop_sign_detected_callback(self, msg):
+        """ callback for when the detector has found a stop sign. Note that
+        a distance of 0 can mean that the lidar did not pickup the stop sign at all """
+
+        # distance of the stop sign
+        dist = msg.distance
+
+        # if close enough and in track or park mode, stop
+		if self.mode == Mode.TRACK or self.mode == Mode.PARK:
+        	if dist > 0 and dist < self.params.stop_min_dist:
+            	self.init_stop_sign()
+
+	def cat_detected_callback(self, msg):
+        """ callback for when the detector has found a cat (or beer). A distance
+		of 0 can mean the item was not detected """
+
+        # distance of the cat
+        dist = msg.distance
+
+        # if cat detected and in track or park mode, respond
+		if self.mode == Mode.TRACK or self.mode == Mode.PARK and dist > 0:
+            self.init_cat()
+
+	def at_goal(self):
+        """
+        returns whether the robot has reached the goal position with enough
+        accuracy to return to idle state
+        """
+        return (linalg.norm(np.array([self.x-self.x_g, self.y-self.y_g])) < self.near_thresh and abs(wrapToPi(self.theta - self.theta_g)) < self.at_thresh_theta)
+
+	def at_origin(self):
+		"""
+		returns whether the robot is close enough in position to the original
+		position to return to idle state
+		"""
+		return (linalg.norm(np.array([self.x-0.0, self.y-0.0])) < self.near_thresh and abs(wrapToPi(self.theta - 0.0)) < self.at_thresh_theta)
+
+	def goal_origin(self):
+		"""
+		returns whether the current goal of the robot is the original position
+		"""
+		return (linalg.norm(np.array([self.x_g-0.0, self.y_g-0.0])) < self.near_thresh and abs(wrapToPi(self.theta_g - 0.0)) < self.at_thresh_theta)
+
+	def stay_idle(self):
+        """ sends zero velocity to stay put """
+
+        vel_g_msg = Twist()
+        self.cmd_vel_publisher.publish(vel_g_msg)
+
+	def pass_sign(self):
+        """ move, ignoring stop sign """
+        if self.near_goal():
+            V, om = self.pose_controller.compute_control(self.x, self.y, self.theta, t)
+        else:
+            V, om = self.traj_controller.compute_control(self.x, self.y, self.theta, t)
+
+        cmd_vel = Twist()
+        cmd_vel.linear.x = V
+        cmd_vel.angular.z = om
+        self.nav_vel_pub.publish(cmd_vel)
+
     def run(self):
         rate = rospy.Rate(10) # 10 Hz
         while not rospy.is_shutdown():
@@ -381,33 +466,107 @@ class Navigator:
 
             # STATE MACHINE LOGIC
             # some transitions handled by callbacks
-            if self.mode == Mode.IDLE:
-                pass
-            elif self.mode == Mode.ALIGN:
+            if self.mode == Mode.IDLE: #awaiting instructions
+                #pass
+				if self.fully_explored and not self.delivery_mode: #in exploration mode, we are notified the environment is fully explored
+					self.mode = Mode.RTB #return to initial position for transition to delivery mode
+
+            elif self.mode == Mode.ALIGN: #rotating to face the direction indicated by the start of the path
                 if self.aligned():
-                    self.current_plan_start_time = rospy.get_rostime()
-                    self.switch_mode(Mode.TRACK)
-            elif self.mode == Mode.TRACK:
-                if self.near_goal():
-                    self.switch_mode(Mode.PARK)
+                	self.current_plan_start_time = rospy.get_rostime()
+                	self.switch_mode(Mode.TRACK)
+
+			elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
+                if self.near_goal(): #near goal
+                    self.switch_mode(Mode.PARK) #switch to pose controller for final approach
+
+				## For cats, beers and stop signs
+				elif self.stop_sign_detected_callback:#we have detected a stop sign!
+					self.init_stop_sign() #start stop sign maneuver
+				elif self.cat_detected_callback and not self.has_meowed: #we have detected a cat! or beer!
+					self.init_cat() #start "meow" message broadcast
+				elif self.has_meowed and not self.cat_detected_callback: #we are not detecting a cat or beer and have already responded
+					self.has_meowed = False #reset in case a new one is detected
+
+				## For marking complete exploration
+				elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not near a goal
+					if not self.goal_origin(): #if initial position is not the current goal
+						self.switch_mode(Mode.RTB)
                 elif not self.close_to_plan_start():
                     rospy.loginfo("replanning because far from start")
                     self.replan()
                 elif (rospy.get_rostime() - self.current_plan_start_time).to_sec() > self.current_plan_duration:
                     rospy.loginfo("replanning because out of time")
-                    self.replan() # we aren't near the goal but we thought we should have been, so replan
-            elif self.mode == Mode.PARK:
-                if self.at_goal():
+			        self.replan() # we aren't near the goal but we thought we should have been, so replan
+
+			elif self.mode == Mode.PARK: #use pose controller for final approach
+				## for picking up food
+				if self.delivery_mode and len(self.goal_list) > 1 and self.at_goal(): #we are in delivery mode and this is not the last goal
+					self.mode = Mode.PICKUP
+
+				elif self.at_goal(): #done maneuvering!
                     # forget about goal:
                     self.x_g = None
                     self.y_g = None
                     self.theta_g = None
-                    self.switch_mode(Mode.IDLE)
+                    self.switch_mode(Mode.IDLE) #await further instructions
+
+				""" For cats, beers and stop signs """
+				elif self.stop_sign_detected_callback():#we have detected a stop sign!
+					self.init_stop_sign() #start stop sign maneuver
+				elif self.cat_detected_callback and not self.has_meowed: #we have detected a cat! or beer!
+					self.init_cat() #start "meow" message broadcast
+				elif self.has_meowed and not self.cat_detected_callback: #we are not detecting a cat or beer and have already responded
+					self.has_meowed = False #reset in case a new one is detected
+
+				"""For marking complete exploration"""
+				elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not at the goal
+					if not goal_origin(): #if initial position is not the current goal
+						self.switch_mode(Mode.RTB)
+
+			elif self.mode == Mode.STOP:
+	            # At a stop sign
+	            if not self.has_stopped(): #timer hasn't run out yet
+					self.stay_idle() #don't move yet
+		    	else: #timer has run out
+					self.init_crossing() #start crossing
+
+	        elif self.mode == Mode.CROSS:
+	            # Crossing an intersection
+		    if not self.has_crossed(): #stop sign is still visible
+	            	self.pass_sign() #keep moving and ignoring sign
+		    else:
+				self.mode = Mode.TRACK #resume movement
+
+			elif self.mode == Mode.MEOW:
+				self.messages.publish(mensaje) #publish the miao message to a dedicated topic
+				self.has_meowed = True #to ensure we do not respond repeatedly t
+				self.mode = Mode.TRACK # resume movement (without aligning with starting angle)
+
+			elif self.mode == Mode.PICKUP:
+				if not self.has_picked_up():
+					self.stay_idle()
+				else:
+					self.x_g = self.goal_list[0][0] #copy the contents of the first tuple as our next goal
+					self.y_g = self.goal_list[0][1]
+					self.theta_g = self.goal_list[0][2]
+					self.goal_list.pop(0) #remove the first tuple from our list of goals
+					self.mode = Mode.ALIGN #resume movement (from beginning)
+
+			elif self.mode == Mode.RTB:
+				self.x_g = 0.0
+				self.y_g = 0.0
+				self.theta_g = 0.0 #set next goal position to be the point of orign
+				self.mode = Mode.ALIGN #resume movement
+
+			elif self.mode == Mode.START_DELIVERY: #this state transitions to delivery mode
+				self.delivery_mode = True #switch to delivery mode
+				self.mode = Mode.IDLE
 
             self.publish_control()
             rate.sleep()
 
-if __name__ == '__main__':    
+if __name__ == '__main__':
     nav = Navigator()
     rospy.on_shutdown(nav.shutdown_callback)
     nav.run()
