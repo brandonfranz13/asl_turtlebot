@@ -566,7 +566,7 @@ class Navigator:
             elif self.mode == Mode.START_DELIVERY: #this state transitions to delivery mode
                 self.delivery_mode = True #switch to delivery mode
                 self.mode = Mode.IDLE
-
+            print self.mode
             self.publish_control()
             rate.sleep()
 
