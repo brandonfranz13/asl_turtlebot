@@ -320,7 +320,7 @@ class Navigator:
             t_remaining_curr = self.current_plan_duration - self.get_current_plan_time()
 
             # Estimate duration of new trajectory
-            th_init_new = traj_new[0,2] + np.pi
+            th_init_new = traj_new[0,2]
             th_err = wrapToPi(th_init_new - self.theta)
             t_init_align = abs(th_err/self.om_max)
             t_remaining_new = t_init_align + t_new[-1]
@@ -340,7 +340,7 @@ class Navigator:
         self.current_plan_start_time = rospy.get_rostime()
         self.current_plan_duration = t_new[-1]
 
-        self.th_init = traj_new[0,2] + np.pi
+        self.th_init = traj_new[0,2]
         self.heading_controller.load_goal(wrapToPi(self.th_init))
 
         if not self.aligned():
