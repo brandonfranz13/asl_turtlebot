@@ -509,7 +509,7 @@ class Navigator:
                     self.theta_g = None
                     self.switch_mode(Mode.IDLE) #await further instructions
 
-                """ For cats, beers and stop signs """
+                # For cats, beers and stop signs """
                 elif self.detectedStopSign:#we have detected a stop sign!
                     self.init_stop_sign() #start stop sign maneuver
                     
