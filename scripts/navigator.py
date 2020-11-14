@@ -373,13 +373,13 @@ class Navigator:
         """ checks if stop sign maneuver is over """
 
         return self.mode == Mode.STOP and \
-               rospy.get_rostime() - self.stop_sign_start > rospy.Duration.from_sec(self.params.stop_time)
+               rospy.get_rostime() - self.stop_sign_start > rospy.Duration.from_sec(self.stop_time)
 
     def has_picked_up(self):
         """ checks if pickup maneuver is over """
 
         return self.mode == Mode.PICKUP and \
-               rospy.get_rostime() - self.pickup_start > rospy.Duration.from_sec(self.params.pickup_time)
+               rospy.get_rostime() - self.pickup_start > rospy.Duration.from_sec(self.pickup_time)
 
     def has_crossed(self):
         """ checks if crossing maneuver is over (stop sign no longer visible)"""
@@ -395,7 +395,7 @@ class Navigator:
         self.detectedStopSign = True
         # if close enough and in track or park mode, stop
         if self.mode == Mode.TRACK or self.mode == Mode.PARK:
-            if dist > 0 and dist < self.params.stop_min_dist:
+            if dist > 0 and dist < self.stop_min_dist:
                 self.init_stop_sign()
 
     def cat_detected_callback(self, msg):
