@@ -320,7 +320,7 @@ class Navigator:
             t_remaining_curr = self.current_plan_duration - self.get_current_plan_time()
 
             # Estimate duration of new trajectory
-            th_init_new = traj_new[0,2]
+            th_init_new = traj_new[0,2] + np.pi
             th_err = wrapToPi(th_init_new - self.theta)
             t_init_align = abs(th_err/self.om_max)
             t_remaining_new = t_init_align + t_new[-1]
