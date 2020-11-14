@@ -4,7 +4,8 @@
   <arg name="y_pos" default="1.6"/>
   <arg name="z_pos" default="0.0"/>
   <arg name="gui" default="false"/>
-
+  <arg name="om_max" default="0.8"/>
+  <arg name="v_max" default="0.4"/>
 
   <rosparam param="sim">true</rosparam>
   <rosparam param="map">true</rosparam>
@@ -61,11 +62,14 @@
     <param name="lasamplestep" value="0.005"/>
   </node>
 
-  <node pkg="asl_turtlebot" type="navigator.py" name="turtlebot_navigator" />
-  <node pkg="asl_turtlebot" type="detector.py" name="turtlebot_detector" />
+  <node pkg="asl_turtlebot" type="navigator.py" name="turtlebot_navigator">
+        <param name="om_max" value="$(arg om_max)"/>
+        <param name="v_max" value="$(arg v_max)"/>
+  </node>
+  <node pkg="asl_turtlebot" type="detector.py" name="turtlebot_detector" output="screen" />
   <node pkg="asl_turtlebot" type="request_publisher.py" name="PavoneCart_requests" />
   <node pkg="asl_turtlebot" type="gazebo_plot.py" name="gazebo_plot" />
   <node pkg="asl_turtlebot" type="goal_commander.py" name="goal_commander" output="screen"/>
 
-  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find asl_turtlebot)/rviz/final_project.rviz"/> -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find asl_turtlebot)/rviz/final_project.rviz"/>
 </launch>

@@ -36,7 +36,7 @@ class DetectorParams:
         # Set to True to use tensorflow and a conv net.
         # False will use a very simple color thresholding to detect stop signs only.
         self.use_tf = rospy.get_param("use_tf")
-
+   
         # Path to the trained conv net
         model_path = rospy.get_param("~model_path", "../tfmodels/stop_signs_gazebo.pb")
         label_path = rospy.get_param("~label_path", "../tfmodels/coco_labels.txt")
@@ -96,11 +96,13 @@ class Detector:
 
         image_np = self.load_image_into_numpy_array(img)
         image_np_expanded = np.expand_dims(image_np, axis=0)
-
+        print("LOOK HERE")
+        print(self.params.use_tf)
         if self.params.use_tf:
             # uses MobileNet to detect objects in images
             # this works well in the real world, but requires
             # good computational resources
+           
             with self.detection_graph.as_default():
                 (boxes, scores, classes, num) = self.sess.run(
                 [self.d_boxes,self.d_scores,self.d_classes,self.num_d],
@@ -137,7 +139,10 @@ class Detector:
 
         for i in range(num):
             if scores[i] >= self.params.min_score:
-                f_scores.append(scores[i])
+		print('FILTER STUFF:')
+                print(i)
+		print(scores[i])
+		f_scores.append(scores[i])
                 f_boxes.append(boxes[i])
                 f_classes.append(int(classes[i]))
                 f_num += 1
@@ -212,6 +217,8 @@ class Detector:
         if num > 0:
             # some objects were detected
             for (box,sc,cl) in zip(boxes, scores, classes):
+		print(cl)
+		print('something obnoxious')
                 ymin = int(box[0]*img_h)
                 xmin = int(box[1]*img_w)
                 ymax = int(box[2]*img_h)
@@ -239,11 +246,14 @@ class Detector:
                 if not self.object_publishers.has_key(cl):
                     self.object_publishers[cl] = rospy.Publisher('/detector/'+self.object_labels[cl],
                         DetectedObject, queue_size=10)
+		    print('new topic should be created')
 
                 # publishes the detected object and its location
+		print('your mom has deez nuts')
                 object_msg = DetectedObject()
                 object_msg.id = cl
                 object_msg.name = self.object_labels[cl]
+		print(self.object_labels[cl])
                 object_msg.confidence = sc
                 object_msg.distance = dist
                 object_msg.thetaleft = thetaleft
