@@ -87,8 +87,8 @@ class Detector:
         self.object_labels = load_object_labels(self.params.label_path)
 
         self.tf_listener = TransformListener()
-        rospy.Subscriber('/camera/image_raw', Image, self.camera_callback, queue_size=1)
-        rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
+        rospy.Subscriber('/camera/image_raw', Image, self.camera_callback, queue_size=1, buff_size=2**24)
+        rospy.Subscriber('/camera/image/compressed', CompressedImage, self.compressed_camera_callback, queue_size=1, buff_size=2**24)
 		rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
         rospy.Subscriber('/scan', LaserScan, self.laser_callback)
 
@@ -205,12 +205,32 @@ class Detector:
         except CvBridgeError as e:
             print(e)
 
+        self.camera_common(img_laser_ranges, img, img_bgr8)
+
+    def compressed_camera_callback(self, msg):
+        """ callback for camera images """
+
+        # save the corresponding laser scan
+        img_laser_ranges = list(self.laser_ranges)
+
+        try:
+            img = self.bridge.compressed_imgmsg_to_cv2(msg, "passthrough")
+            img_bgr8 = self.bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
+        except CvBridgeError as e:
+            print(e)
+
+        self.camera_common(img_laser_ranges, img, img_bgr8)
+
+    def camera_common(self, img_laser_ranges, img, img_bgr8):
         (img_h,img_w,img_c) = img.shape
 
         # runs object detection in the image
         (boxes, scores, classes, num) = self.run_detection(img)
 
         if num > 0:
+            # create list of detected objects
+            detected_objects = DetectedObjectList()
+
             # some objects were detected
             for (box,sc,cl) in zip(boxes, scores, classes):
                 ymin = int(box[0]*img_h)
@@ -267,14 +287,10 @@ class Detector:
         cx, cy are the center of the image in pixel (the principal point), fx and fy are
         the focal lengths. """
 
-        ########## Code starts here ##########
-        # TODO: Extract camera intrinsic parameters.
-        print(msg.K)
-        self.cx = msg.K[2]
-        self.cy = msg.K[6]
-        self.fx = msg.K[0]
-        self.fy = msg.K[5]
-        ########## Code ends here ##########
+        self.cx = msg.P[2]
+        self.cy = msg.P[6]
+        self.fx = msg.P[0]
+        self.fy = msg.P[5]
 
     def laser_callback(self, msg):
         """ callback for thr laser rangefinder """
