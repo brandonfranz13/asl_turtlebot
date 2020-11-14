@@ -134,8 +134,9 @@ class Navigator:
         rospy.Subscriber('/detector/beer', DetectedObject, self.cat_detected_callback) #detecting beer, not cat
 
         # Publisher for "meow" message
-        self.messages = rospy.Publisher('/mensaje',mensaje,queue_size=10)
-        mensaje = "Saluti!" #message to broadcast in "meow" state
+        self.messages = rospy.Publisher('/mensaje', String, queue_size=10)
+        mensaje = String()
+        mensaje.data = "Saluti!" #message to broadcast in "meow" state
 
         print "finished init"
 
