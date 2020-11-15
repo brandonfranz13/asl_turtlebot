@@ -572,19 +572,22 @@ class Navigator:
                     self.stay_idle() #don't move yet
                 else: #timer has run out
                     self.init_crossing() #start crossing
-                
+            
+            ################# CROSS ####################   
             elif self.mode == Mode.CROSS:
                 # Crossing an intersection
                 if not self.has_crossed(): #stop sign is still visible
                         self.pass_sign() #keep moving and ignoring sign
                 else:
                     self.mode = Mode.TRACK #resume movement
-                    
+            
+            ################# MEOW ####################         
             elif self.mode == Mode.MEOW:
                 self.messages.publish(mensaje) #publish the miao message to a dedicated topic
                 self.has_meowed = True #to ensure we do not respond repeatedly t
                 self.mode = Mode.TRACK # resume movement (without aligning with starting angle)
-
+            
+            ################# PICKUP #################### 
             elif self.mode == Mode.PICKUP:
                 if not self.has_picked_up():
                     self.stay_idle()
@@ -594,17 +597,20 @@ class Navigator:
                     self.theta_g = self.goal_list[0][2]
                     self.goal_list.pop(0) #remove the first tuple from our list of goals
                     self.mode = Mode.ALIGN #resume movement (from beginning)
-
+            
+            ################# RETURN TO BASE (RTB) #################### 
             elif self.mode == Mode.RTB:
                 self.x_g = 0.0
                 self.y_g = 0.0
                 self.theta_g = 0.0 #set next goal position to be the point of orign
                 self.mode = Mode.ALIGN #resume movement
-
+            
+            ################# START DELIVERY #################### 
             elif self.mode == Mode.START_DELIVERY: #this state transitions to delivery mode
                 self.delivery_mode = True #switch to delivery mode
                 self.mode = Mode.IDLE
-            print self.mode
+            
+            rospy.loginfo(self.mode)
             self.publish_control()
             rate.sleep()
 
