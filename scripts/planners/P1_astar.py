@@ -25,7 +25,7 @@ class AStar(object):
         self.cost_to_arrive[x_init] = 0
         self.est_cost_through[x_init] = self.distance(x_init,x_goal)
         
-        self.padding = 0.25
+        self.padding = 0.1
         
         self.path = None        # the final path as a list of states
 
