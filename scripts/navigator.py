@@ -4,6 +4,7 @@ import rospy
 from nav_msgs.msg import OccupancyGrid, MapMetaData, Path
 from geometry_msgs.msg import Twist, Pose2D, PoseStamped
 from std_msgs.msg import String
+from sensor_msgs.msg import LaserScan
 from asl_turtlebot.msg import DetectedObject
 import tf
 import numpy as np
