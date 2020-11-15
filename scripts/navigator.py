@@ -120,22 +120,29 @@ class Navigator:
         self.stop_min_dist = rospy.get_param("~stop_min_dist", 0.5) # Minimum distance from a stop sign to obey it
         self.pickup_time = rospy.get_param("~pickup_time", 4.) # Time taken to pick food up at a vendor between 3 and 5 seconds
 
+        # Obstacle avoidance
+        self.laser_ranges = []
+        self.collisionImminent = False
+        self.collisionThreshold = 0.2
+
         # list of goals, in order
         self.goal_list = [] #implement as a list of three-element tuples, with the last tuple being all zeroes (original position)
 
         rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
         rospy.Subscriber('/map_metadata', MapMetaData, self.map_md_callback)
         rospy.Subscriber('/cmd_nav', Pose2D, self.cmd_nav_callback)
+        
+        rospy.Subscriber('/scan', LaserScan, self.laser_callback)
 
         # Stop sign detector
         rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
 
         # Cat detector
         rospy.Subscriber('/detector/beer', DetectedObject, self.cat_detected_callback) #detecting beer, not cat
-        
+        ####################################################
         # Subscribe to vendors
         #rospy.Subscriber('/vendors', VendorList, self.vendor_callback)
-
+        ####################################################
         # Publisher for "meow" message
         self.messages = rospy.Publisher('/mensaje', String, queue_size=10)
         mensaje = String()
@@ -197,6 +204,11 @@ class Navigator:
         cmd_vel.linear.x = 0.0
         cmd_vel.angular.z = 0.0
         self.nav_vel_pub.publish(cmd_vel)
+        
+    def laser_callback(self, msg):
+        """ provides range data for obstacle avoidance """
+        self.laser_ranges = msg.ranges
+        self.collisionImminent = np.any([range < self.collisionThreshold for range in self.laser_ranges])
 
     def near_goal(self):
         """
@@ -441,6 +453,13 @@ class Navigator:
 
         vel_g_msg = Twist()
         self.nav_vel_pub.publish(vel_g_msg)
+        
+    def backup(self):
+        """ Put robot in reverse """
+        cmd_vel = Twist()
+        cmd_vel.linear.x = -0.4
+        cmd_vel.angular.z = 0.0
+        self.nav_vel_pub.publish(cmd_vel)
 
     def pass_sign(self):
         """ move, ignoring stop sign """
@@ -487,7 +506,10 @@ class Navigator:
                     
             ################# TRACK ####################
             elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
-                if self.near_goal(): #near goal
+                if self.collisionImminent:
+                    self.backup()
+                
+                elif self.near_goal(): #near goal
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
 
                 ## For cats, beers and stop signs
