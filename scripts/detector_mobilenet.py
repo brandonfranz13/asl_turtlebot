@@ -81,7 +81,7 @@ class Detector:
         rospy.Subscriber('/camera/image/compressed', CompressedImage, self.compressed_camera_callback, queue_size=1, buff_size=2**24)
         rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
 
-	rospy.Subscriber('/scan', LaserScan, self.laser_callback)
+        rospy.Subscriber('/scan', LaserScan, self.laser_callback)
 
     def run_detection(self, img):
         """ runs a detection method in a given image """

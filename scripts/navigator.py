@@ -134,7 +134,10 @@ class Navigator:
         rospy.Subscriber('/cmd_nav', Pose2D, self.cmd_nav_callback)
         
         rospy.Subscriber('/scan', LaserScan, self.laser_callback)
-
+        
+        #Delivery Request Subscriber
+        rospy.Subscriber('/delivery_request', String, self.delivery_request_callback)        
+        
         # Stop sign detector
         rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
 
@@ -210,6 +213,18 @@ class Navigator:
         """ provides range data for obstacle avoidance """
         self.laser_ranges = msg.ranges
         self.collisionImminent = np.any([range < self.collisionThreshold for range in self.laser_ranges])
+        
+    def delivery_request_callback(self, msg):
+        """
+        Callback for the delivery request from request_publisher.py. 
+        Message format is a string of comma-separated items to pickup and deliver
+        """
+        def isWaiting():
+            return self.delivery_request == None
+        
+        if isWaiting():
+            self.delivery_request = [request.strip() for request in msg.data.split(',')]
+            print("Order Received. Out for delivery!")
 
     def near_goal(self):
         """
