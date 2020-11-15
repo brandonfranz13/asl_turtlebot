@@ -160,8 +160,8 @@ class AStar(object):
         """
         ########## Code starts here ##########
         while len(self.open_set) > 0:
-	    if(!self.is_free(self.x_goal):
-		return false
+            if !self.is_free(self.x_goal):
+                return False
             current = self.find_best_est_cost_through()
             if current == self.x_goal:
                 self.path = self.reconstruct_path()
