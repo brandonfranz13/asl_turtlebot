@@ -132,6 +132,9 @@ class Navigator:
 
         # Cat detector
         rospy.Subscriber('/detector/beer', DetectedObject, self.cat_detected_callback) #detecting beer, not cat
+        
+        # Subscribe to vendors
+        #rospy.Subscriber('/vendors', VendorList, self.vendor_callback)
 
         # Publisher for "meow" message
         self.messages = rospy.Publisher('/mensaje', String, queue_size=10)
@@ -409,6 +412,10 @@ class Navigator:
         if self.mode == Mode.TRACK or self.mode == Mode.PARK and dist > 0:
             self.init_cat()
 
+    # def vendor_callback(self, msg):
+        # """ callback for the list of vendors we build """
+        # self.goal_list.append(msg)
+    
     def at_goal(self):
         """
         returns whether the robot has reached the goal position with enough
@@ -466,16 +473,19 @@ class Navigator:
 
             # STATE MACHINE LOGIC
             # some transitions handled by callbacks
+            ################# IDLE ####################
             if self.mode == Mode.IDLE: #awaiting instructions
                 #pass
                 if self.fully_explored and not self.delivery_mode: #in exploration mode, we are notified the environment is fully explored
                     self.mode = Mode.RTB #return to initial position for transition to delivery mode
-
+                    
+            ################# ALIGN ####################
             elif self.mode == Mode.ALIGN: #rotating to face the direction indicated by the start of the path
                 if self.aligned():
                     self.current_plan_start_time = rospy.get_rostime()
                     self.switch_mode(Mode.TRACK)
-
+                    
+            ################# TRACK ####################
             elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
                 if self.near_goal(): #near goal
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
@@ -494,7 +504,8 @@ class Navigator:
                 elif (rospy.get_rostime() - self.current_plan_start_time).to_sec() > self.current_plan_duration:
                     rospy.loginfo("replanning because out of time")
                     self.replan() # we aren't near the goal but we thought we should have been, so replan
-
+            
+            ################# PARK ####################
             elif self.mode == Mode.PARK: #use pose controller for final approach
                 ## for picking up food
                 if self.delivery_mode and len(self.goal_list) > 1 and self.at_goal(): #we are in delivery mode and this is not the last goal
@@ -515,7 +526,8 @@ class Navigator:
                 elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not at the goal
                     if not goal_origin(): #if initial position is not the current goal
                         self.switch_mode(Mode.RTB)
-
+                        
+            ################# STOP ####################
             elif self.mode == Mode.STOP:
                 # At a stop sign
                 if not self.has_stopped(): #timer hasn't run out yet

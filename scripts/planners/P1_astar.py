@@ -24,7 +24,9 @@ class AStar(object):
         self.open_set.add(x_init)
         self.cost_to_arrive[x_init] = 0
         self.est_cost_through[x_init] = self.distance(x_init,x_goal)
-
+        
+        self.padding = 0.25
+        
         self.path = None        # the final path as a list of states
 
     def is_free(self, x):
@@ -194,7 +196,7 @@ class DetOccupancyGrid2D(object):
         for obs in self.obstacles:
             inside = True
             for dim in range(len(x)):
-                if x[dim] < obs[0][dim] or x[dim] > obs[1][dim]:
+                if x[dim] < (obs[0][dim]-padding) or x[dim] > (obs[1][dim]+padding):
                     inside = False
                     break
             if inside:
