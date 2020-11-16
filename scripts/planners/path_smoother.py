@@ -33,7 +33,7 @@ def compute_smoothed_traj(path, V_des, alpha, dt):
     traj_smoothed[:, 1] = scipy.interpolate.splev(t_smoothed, sply, der=0) #y
     traj_smoothed[:, 3] = scipy.interpolate.splev(t_smoothed, splx, der=1) #xd
     traj_smoothed[:, 4] = scipy.interpolate.splev(t_smoothed, sply, der=1) #yd
-    traj_smoothed[:, 2] = np.arctan(traj_smoothed[:,4]/ traj_smoothed[:,3]) #theta
+    traj_smoothed[:, 2] = np.arctan2(traj_smoothed[:,4], traj_smoothed[:,3]) #theta
     traj_smoothed[:, 5] = scipy.interpolate.splev(t_smoothed, splx, der=2) #xdd
     traj_smoothed[:, 6] = scipy.interpolate.splev(t_smoothed, sply, der=2) #ydd
     ########## Code ends here ##########
