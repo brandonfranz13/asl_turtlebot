@@ -96,7 +96,7 @@ class Navigator:
         self.kdy = 1.5
 
         # heading controller parameters
-        self.kp_th = 1.0
+        self.kp_th = 2.0
 
         self.traj_controller = TrajectoryTracker(self.kpx, self.kpy, self.kdx, self.kdy, self.v_max, self.om_max)
         self.pose_controller = PoseController(0.4, 0.8, 0.8, self.v_max, self.om_max)
@@ -238,6 +238,11 @@ class Navigator:
         returns whether robot is aligned with starting direction of path
         (enough to switch to tracking controller)
         """
+        print("Current alignment:")
+        print(self.theta)
+        print(self.th_init)
+        print(abs(wrapToPi(self.theta - self.th_init))
+        print("<end Current alignment>")
         return (abs(wrapToPi(self.theta - self.th_init)) < self.theta_start_thresh)
 
     def close_to_plan_start(self):
