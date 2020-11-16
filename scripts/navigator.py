@@ -508,17 +508,20 @@ class Navigator:
         cmd_vel.linear.x = V
         cmd_vel.angular.z = om
         self.nav_vel_pub.publish(cmd_vel)
-
+        
+    def update_state(self):
+        (translation,rotation) = self.trans_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+        self.x = translation[0]
+        self.y = translation[1]
+        euler = tf.transformations.euler_from_quaternion(rotation)
+        self.theta = euler[2]
+        
     def run(self):
         rate = rospy.Rate(10) # 10 Hz
         while not rospy.is_shutdown():
             # try to get state information to update self.x, self.y, self.theta
             try:
-                (translation,rotation) = self.trans_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
-                self.x = translation[0]
-                self.y = translation[1]
-                euler = tf.transformations.euler_from_quaternion(rotation)
-                self.theta = euler[2]
+                self.update_state()
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
                 self.current_plan = []
                 rospy.loginfo("Navigator: waiting for state info")
@@ -549,18 +552,18 @@ class Navigator:
                     collision_object_theta = np.argmin(self.laser_ranges) * self.laser_angle_increment + np.pi
                     self.heading_controller.load_goal(collision_object_theta)
                     print("YOU SPIN ME RIGHT ROUND")
-                    if not self.aligned_to_object(collision_object_theta):
+                    while not self.aligned_to_object(collision_object_theta):
+                        self.update_state()
                         V, om = self.heading_controller.compute_control(self.x, self.y, self.theta, 1) #t=1, time not used
                         cmd_vel = Twist()
                         cmd_vel.linear.x = V
                         cmd_vel.angular.z = om
                         self.nav_vel_pub.publish(cmd_vel)
-                    else:
-                        print("BACKING UP")    
-                        self.backup(0.9, 0.6)
-                        self.stay_idle()
-                        self.replan()
-                        self.switch_mode(Mode.ALIGN)
+                    print("BACKING UP")    
+                    self.backup(0.9, 0.6)
+                    self.stay_idle()
+                    self.replan()
+                    self.switch_mode(Mode.ALIGN)
                 
                 elif self.near_goal(): #near goal
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
