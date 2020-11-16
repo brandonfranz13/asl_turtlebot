@@ -544,7 +544,7 @@ class Navigator:
                         # self.backup()
                     collision_object_theta = np.argmin(self.laser_ranges) * self.laser_angle_increment
                     self.heading_controller.load_goal(collision_object_theta)
-                    while not aligned_to_object(collision_object_theta):
+                    while not self.aligned_to_object(collision_object_theta):
                         V, om = self.heading_controller.compute_control(self.x, self.y, self.theta, t)
                         cmd_vel = Twist()
                         cmd_vel.linear.x = V
