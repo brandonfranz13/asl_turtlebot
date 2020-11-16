@@ -556,7 +556,7 @@ class Navigator:
                         cmd_vel.angular.z = om
                         self.nav_vel_pub.publish(cmd_vel)
                     print("BACKING UP")    
-                    #self.backup(0.9, 0.6)
+                    self.backup(0.9, 0.6)
                     self.stay_idle()
                     self.replan()
                     self.switch_mode(Mode.ALIGN)
