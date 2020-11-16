@@ -523,7 +523,8 @@ class Navigator:
             ################# TRACK ####################
             elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
                 if self.collisionImminent:
-                    self.backup()
+                    while self.collisionImminent:
+                        self.backup()                    
                 
                 elif self.near_goal(): #near goal
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
