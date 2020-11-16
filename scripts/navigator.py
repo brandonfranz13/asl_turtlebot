@@ -549,17 +549,18 @@ class Navigator:
                     collision_object_theta = np.argmin(self.laser_ranges) * self.laser_angle_increment + np.pi
                     self.heading_controller.load_goal(collision_object_theta)
                     print("YOU SPIN ME RIGHT ROUND")
-                    if self.aligned_to_object(collision_object_theta):
+                    if not self.aligned_to_object(collision_object_theta):
                         V, om = self.heading_controller.compute_control(self.x, self.y, self.theta, 1) #t=1, time not used
                         cmd_vel = Twist()
                         cmd_vel.linear.x = V
                         cmd_vel.angular.z = om
                         self.nav_vel_pub.publish(cmd_vel)
-                    print("BACKING UP")    
-                    self.backup(0.9, 0.6)
-                    self.stay_idle()
-                    self.replan()
-                    self.switch_mode(Mode.ALIGN)
+                    else:
+                        print("BACKING UP")    
+                        self.backup(0.9, 0.6)
+                        self.stay_idle()
+                        self.replan()
+                        self.switch_mode(Mode.ALIGN)
                 
                 elif self.near_goal(): #near goal
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
