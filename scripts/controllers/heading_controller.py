@@ -21,7 +21,7 @@ class HeadingController:
         self.th_g = th_g
 
     def compute_control(self, x, y, th, t):
-        err = wrapToPi(self.th_g - th)
+        err = wrapToPi(self.th_g) - wrapToPi(th)
         om = self.kp*err
 
         # apply control limits
