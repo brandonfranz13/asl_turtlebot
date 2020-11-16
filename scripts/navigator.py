@@ -245,8 +245,7 @@ class Navigator:
     
     def aligned_to_object(self, object_theta):
         """
-        returns whether robot is aligned with starting direction of path
-        (enough to switch to tracking controller)
+        returns whether robot is aligned to an object
         """        
         return (abs(wrapToPi(self.theta - object_theta)) < self.theta_start_thresh)
 
@@ -544,13 +543,14 @@ class Navigator:
                         # self.backup()
                     collision_object_theta = np.argmin(self.laser_ranges) * self.laser_angle_increment
                     self.heading_controller.load_goal(collision_object_theta)
+                    print("YOU SPIN ME RIGHT ROUND")
                     while not self.aligned_to_object(collision_object_theta):
                         V, om = self.heading_controller.compute_control(self.x, self.y, self.theta, 1) #t=1, time not used
                         cmd_vel = Twist()
                         cmd_vel.linear.x = V
                         cmd_vel.angular.z = om
                         self.nav_vel_pub.publish(cmd_vel)
-                        
+                    print("BACKING UP")    
                     self.backup()
                     self.stay_idle()
                     self.replan()
