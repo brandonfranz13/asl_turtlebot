@@ -238,7 +238,7 @@ class Navigator:
         returns whether robot is aligned with starting direction of path
         (enough to switch to tracking controller)
         """
-        return (abs(wrapToPi(wrapToPi(self.theta) - self.th_init)) < self.theta_start_thresh)
+        return (abs(wrapToPi(self.theta - self.th_init)) < self.theta_start_thresh)
 
     def close_to_plan_start(self):
         return (abs(self.x - self.plan_start[0]) < self.start_pos_thresh and abs(self.y - self.plan_start[1]) < self.start_pos_thresh)
