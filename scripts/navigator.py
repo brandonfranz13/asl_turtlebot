@@ -586,7 +586,7 @@ class Navigator:
                 else:
                     self.mode = Mode.TRACK #resume movement
             
-            ################# MEOW ####################         
+##EXTENSION ################# MEOW ####################         
             elif self.mode == Mode.MEOW:
                 self.messages.publish(mensaje) #publish the miao message to a dedicated topic
                 self.has_meowed = True #to ensure we do not respond repeatedly t
