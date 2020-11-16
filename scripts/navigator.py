@@ -96,7 +96,7 @@ class Navigator:
         self.kdy = 1.5
 
         # heading controller parameters
-        self.kp_th = 2.
+        self.kp_th = 1.0
 
         self.traj_controller = TrajectoryTracker(self.kpx, self.kpy, self.kdx, self.kdy, self.v_max, self.om_max)
         self.pose_controller = PoseController(0.4, 0.8, 0.8, self.v_max, self.om_max)
