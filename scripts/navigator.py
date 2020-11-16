@@ -124,7 +124,7 @@ class Navigator:
         # Obstacle avoidance
         self.laser_ranges = []
         self.collisionImminent = False
-        self.collisionThreshold = 0.2
+        self.collisionThreshold = 0.1
         self.obstacle_padding = 0.1
         self.laser_angle_increment = 0.1
 
@@ -556,7 +556,7 @@ class Navigator:
                         cmd_vel.angular.z = om
                         self.nav_vel_pub.publish(cmd_vel)
                     print("BACKING UP")    
-                    self.backup(0.9, 0.4)
+                    self.backup(0.9, 0.6)
                     self.stay_idle()
                     self.replan()
                     self.switch_mode(Mode.ALIGN)
