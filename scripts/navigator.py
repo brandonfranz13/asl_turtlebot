@@ -125,6 +125,8 @@ class Navigator:
         self.laser_ranges = []
         self.collisionImminent = False
         self.collisionThreshold = 0.2
+        self.obstacle_padding = 0.1
+        self.laser_angle_increment = 0.1
 
         # list of goals, in order
         self.goal_list = [] #implement as a list of three-element tuples, with the last tuple being all zeroes (original position)
@@ -212,6 +214,7 @@ class Navigator:
     def laser_callback(self, msg):
         """ provides range data for obstacle avoidance """
         self.laser_ranges = msg.ranges
+        self.laser_angle_increment = msg.angle_increment
         self.collisionImminent = np.any([range < self.collisionThreshold for range in self.laser_ranges])
         
     def delivery_request_callback(self, msg):
@@ -237,14 +240,15 @@ class Navigator:
         """
         returns whether robot is aligned with starting direction of path
         (enough to switch to tracking controller)
-        """
-        print("Current alignment:")
-        print(self.theta)
-        print(wrapToPi(self.th_init))
-        print(abs(wrapToPi(self.theta - wrapToPi(self.th_init))))
-        print("<end Current alignment>")
-        
+        """        
         return (abs(wrapToPi(self.theta - wrapToPi(self.th_init))) < self.theta_start_thresh)
+    
+    def aligned_to_object(self, object_theta):
+        """
+        returns whether robot is aligned with starting direction of path
+        (enough to switch to tracking controller)
+        """        
+        return (abs(wrapToPi(self.theta - object_theta)) < self.theta_start_thresh)
 
     def close_to_plan_start(self):
         return (abs(self.x - self.plan_start[0]) < self.start_pos_thresh and abs(self.y - self.plan_start[1]) < self.start_pos_thresh)
@@ -331,7 +335,7 @@ class Navigator:
         x_init = self.snap_to_grid((self.x, self.y))
         self.plan_start = x_init
         x_goal = self.snap_to_grid((self.x_g, self.y_g))
-        problem = AStar(state_min,state_max,x_init,x_goal,self.occupancy,self.plan_resolution)
+        problem = AStar(state_min,state_max,x_init,x_goal,self.occupancy,self.plan_resolution, self.obstacle_padding)
 
         rospy.loginfo("Navigator: computing navigation plan")
         success =  problem.solve()
@@ -479,12 +483,15 @@ class Navigator:
         vel_g_msg = Twist()
         self.nav_vel_pub.publish(vel_g_msg)
         
-    def backup(self):
+    def backup(self, time_to_backup = 0.25):
         """ Put robot in reverse """
-        cmd_vel = Twist()
-        cmd_vel.linear.x = -0.4
-        cmd_vel.angular.z = 0.0
-        self.nav_vel_pub.publish(cmd_vel)
+        start = rospy.get_rostime()
+        while (rospy.get_rostime() - start) < time_to_backup
+            cmd_vel = Twist()
+            velocity = 0.8 * velocity
+            cmd_vel.linear.x = velocity
+            cmd_vel.angular.z = 0.0
+            self.nav_vel_pub.publish(cmd_vel)
 
     def pass_sign(self):
         """ move, ignoring stop sign """
@@ -533,8 +540,18 @@ class Navigator:
             elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
                 if self.collisionImminent: # backs up until outside collision threshold
                     rospy.loginfo("Collision Imminent: Backing up and replanning")
-                    while self.collisionImminent:
-                        self.backup()  
+                    # while self.collisionImminent:
+                        # self.backup()
+                    collision_object_theta = np.argmin(self.laser_ranges) * self.laser_angle_increment
+                    self.heading_controller.load_goal(collision_object_theta)
+                    while not aligned_to_object(collision_object_theta):
+                        V, om = self.heading_controller.compute_control(self.x, self.y, self.theta, t)
+                        cmd_vel = Twist()
+                        cmd_vel.linear.x = V
+                        cmd_vel.angular.z = om
+                        self.nav_vel_pub.publish(cmd_vel)
+                        
+                    self.backup()
                     self.stay_idle()
                     self.replan()
                     self.switch_mode(Mode.ALIGN)
