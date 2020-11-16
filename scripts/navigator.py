@@ -246,7 +246,11 @@ class Navigator:
     def aligned_to_object(self, object_theta):
         """
         returns whether robot is aligned to an object
-        """        
+        """      
+        print("Aligned to object data")
+        print(self.theta)
+        print(object_theta)
+        print(abs(wrapToPi(self.theta - object_theta)))
         return (abs(wrapToPi(self.theta - object_theta)) < self.theta_start_thresh)
 
     def close_to_plan_start(self):
