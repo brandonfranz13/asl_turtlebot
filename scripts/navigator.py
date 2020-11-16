@@ -124,7 +124,7 @@ class Navigator:
         # Obstacle avoidance
         self.laser_ranges = []
         self.collisionImminent = False
-        self.collisionThreshold = 0.1
+        self.collisionThreshold = 0.15
         self.obstacle_padding = 0.1
         self.laser_angle_increment = 0.1
 
