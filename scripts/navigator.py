@@ -243,7 +243,8 @@ class Navigator:
         print(self.th_init)
         print(abs(wrapToPi(self.theta - self.th_init)))
         print("<end Current alignment>")
-        return (abs(wrapToPi(self.theta - self.th_init)) < self.theta_start_thresh)
+        
+        return (abs(wrapToPi(self.theta - wrapToPi(self.th_init))) < self.theta_start_thresh)
 
     def close_to_plan_start(self):
         return (abs(self.x - self.plan_start[0]) < self.start_pos_thresh and abs(self.y - self.plan_start[1]) < self.start_pos_thresh)
