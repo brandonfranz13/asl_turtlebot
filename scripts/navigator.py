@@ -240,8 +240,8 @@ class Navigator:
         """
         print("Current alignment:")
         print(self.theta)
-        print(self.th_init)
-        print(abs(wrapToPi(self.theta - self.th_init)))
+        print(wrapToPi(self.th_init))
+        print(abs(wrapToPi(self.theta - wrapToPi(self.th_init))))
         print("<end Current alignment>")
         
         return (abs(wrapToPi(self.theta - wrapToPi(self.th_init))) < self.theta_start_thresh)
