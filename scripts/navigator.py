@@ -124,7 +124,7 @@ class Navigator:
         # Obstacle avoidance
         self.laser_ranges = []
         self.collisionImminent = False
-        self.collisionThreshold = 0.15
+        self.collisionThreshold = 0.2
         self.obstacle_padding = 0.1
         self.laser_angle_increment = 0.1
 
@@ -546,7 +546,7 @@ class Navigator:
                     rospy.loginfo("Collision Imminent: Backing up and replanning")
                     # while self.collisionImminent:
                         # self.backup()
-                    collision_object_theta = np.argmin(self.laser_ranges) * self.laser_angle_increment
+                    collision_object_theta = np.argmin(self.laser_ranges) * self.laser_angle_increment + np.pi
                     self.heading_controller.load_goal(collision_object_theta)
                     print("YOU SPIN ME RIGHT ROUND")
                     if self.aligned_to_object(collision_object_theta):
@@ -556,7 +556,7 @@ class Navigator:
                         cmd_vel.angular.z = om
                         self.nav_vel_pub.publish(cmd_vel)
                     print("BACKING UP")    
-                    self.backup(0.9, 0.6)
+                    #self.backup(0.9, 0.6)
                     self.stay_idle()
                     self.replan()
                     self.switch_mode(Mode.ALIGN)
