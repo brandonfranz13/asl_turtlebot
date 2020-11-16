@@ -488,8 +488,8 @@ class Navigator:
         
     def backup(self, time_to_backup = 0.25):
         """ Put robot in reverse """
-        start = rospy.get_rostime()
-        while (rospy.get_rostime() - start) < time_to_backup:
+        start = rospy.get_time()
+        while (rospy.get_time() - start) < time_to_backup:
             cmd_vel = Twist()
             velocity = 0.8 * velocity
             cmd_vel.linear.x = velocity
