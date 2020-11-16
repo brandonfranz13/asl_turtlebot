@@ -380,7 +380,7 @@ class Navigator:
         self.th_init = traj_new[0,2]
         print("A few traj_new thetas")
         print(traj_new[0:20,2])
-        print(traj_new[-1:-20, 2])
+        print(traj_new[-20:, 2])
         self.heading_controller.load_goal(wrapToPi(self.th_init))
 
         if not self.aligned():
