@@ -99,7 +99,7 @@ class Navigator:
         self.kp_th = 2.
 
         self.traj_controller = TrajectoryTracker(self.kpx, self.kpy, self.kdx, self.kdy, self.v_max, self.om_max)
-        self.pose_controller = PoseController(0., 0., 0., self.v_max, self.om_max)
+        self.pose_controller = PoseController(0.4, 0.8, 0.8, self.v_max, self.om_max)
         self.heading_controller = HeadingController(self.kp_th, self.om_max)
 
         self.nav_planned_path_pub = rospy.Publisher('/planned_path', Path, queue_size=10)
@@ -522,9 +522,13 @@ class Navigator:
                     
             ################# TRACK ####################
             elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
-                if self.collisionImminent:
+                if self.collisionImminent: # backs up until outside collision threshold
+                    rospy.loginfo("Collision Imminent: Backing up and replanning")
                     while self.collisionImminent:
-                        self.backup()                    
+                        self.backup()  
+                    self.stay_idle()
+                    self.replan()
+                    self.switch_mode(Mode.ALIGN)
                 
                 elif self.near_goal(): #near goal
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
