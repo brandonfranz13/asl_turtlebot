@@ -486,13 +486,13 @@ class Navigator:
         vel_g_msg = Twist()
         self.nav_vel_pub.publish(vel_g_msg)
         
-    def backup(self, time_to_backup = 0.25):
+    def backup(self, decay=0.8, time_to_backup = 0.25):
         """ Put robot in reverse """
         start = rospy.get_time()
         velocity = self.v_max
         while (rospy.get_time() - start) < time_to_backup:
             cmd_vel = Twist()
-            velocity = 0.8 * velocity
+            velocity = decay * velocity
             cmd_vel.linear.x = velocity
             cmd_vel.angular.z = 0.0
             self.nav_vel_pub.publish(cmd_vel)
@@ -556,7 +556,7 @@ class Navigator:
                         cmd_vel.angular.z = om
                         self.nav_vel_pub.publish(cmd_vel)
                     print("BACKING UP")    
-                    self.backup()
+                    self.backup(0.9, 0.4)
                     self.stay_idle()
                     self.replan()
                     self.switch_mode(Mode.ALIGN)
