@@ -476,16 +476,16 @@ class Navigator:
                 object_msg.thetaright = thetaright
                 object_msg.corners = [ymin,xmin,ymax,xmax]
         """
-        avgTheta = (msg.thetaleft + msg.thetaright) / 2.
-        vendor_x = msg.distance * np.cos(avgTheta)
-        vendor_y = msg.distance * np.sin(avgTheta)
-        vendor_theta = avgTheta
         print("Condition to publish vendor")
         print(self.vendor_catalogue.has_key(msg.name))
         print("I do what I want")
         
         if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
-            self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
+            avgTheta = (msg.thetaleft + msg.thetaright) / 2.
+            vendor_x = msg.distance * np.cos(avgTheta)
+            vendor_y = msg.distance * np.sin(avgTheta)
+            vendor_theta = avgTheta
+            
             self.vendor_pub = rospy.Publisher('/vendor/pose', Vendor, queue_size=10)
             
             vendor_msg = Vendor()
@@ -495,6 +495,16 @@ class Navigator:
             vendor_msg.pose.theta = vendor_theta
             
             self.vendor_pub.publish()
+            
+            # Convert to world coordinates
+            (translation,rotation) = self.trans_listener.lookupTransform('base_camera', 'world', rospy.Time(0))
+            vendor_x = translation[0]
+            vendor_y = translation[1]
+            euler = tf.transformations.euler_from_quaternion(rotation)
+            vendor_theta = euler[2]
+            
+            self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
+            
             print("Vendor Catalogue")
             print(msg.name)
             print(self.vendor_catalogue[msg.name])
