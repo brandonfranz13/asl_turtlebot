@@ -108,6 +108,7 @@ class Navigator:
         self.nav_smoothed_path_pub = rospy.Publisher('/cmd_smoothed_path', Path, queue_size=10)
         self.nav_smoothed_path_rej_pub = rospy.Publisher('/cmd_smoothed_path_rejected', Path, queue_size=10)
         self.nav_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        
 
         self.trans_listener = tf.TransformListener()
 
@@ -472,22 +473,25 @@ class Navigator:
                 object_msg.thetaright = thetaright
                 object_msg.corners = [ymin,xmin,ymax,xmax]
         """
-        # if msg.thetaleft > msg.thetaright:
-            # alpha = msg.thetaleft
-        # elif msg.thetaleft < msg.thetaright:
-            # alpha = -msg.thetaright
-        # else:
-            # alpha = 0        
-        # (translation,rotation) = self.trans_listener.lookupTransform('/base_footprint', '/zebra_tf', rospy.Time(0))
-        # vendor_x = translation[0]
-        # vendor_y = translation[1]
-        # euler = tf.transformations.euler_from_quaternion(rotation)
-        # vendor_theta = euler[2]
-        vendor_x, vendor_y, vendor_theta = 0, 0, 1
+        avgTheta = (msg.thetaleft + msg.thetaright) / 2.
+        vendor_x = msg.distance * np.cos(avgTheta)
+        vendor_y = msg.distance * np.sin(avgTheta)
+        vendor_theta = avgTheta
+
         if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
             self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
-        print("Vendor Catalogue")
-        print(self.vendor_catalogue[msg.name])
+            self.vendor_pub = rospy.Publisher('/%s/pose' % msg.name, Vendor, queue_size=10)
+            
+            vendor_msg = Vendor()
+            vendor_msg.name = msg.name
+            vendor_msg.pose.x = vendor_x
+            vendor_msg.pose.y = vendor_y
+            vendor_msg.pose.theta = vendor_theta
+            
+            self.vendor_pub.publish()
+            print("Vendor Catalogue")
+            print(msg.name)
+            print(self.vendor_catalogue[msg.name])
     
     def at_goal(self):
         """

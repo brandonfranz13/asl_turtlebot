@@ -77,7 +77,7 @@
   <!--
     <node pkg="asl_turtlebot" type="gazebo_plot.py" name="gazebo_plot" />
   -->
-  
+  <node pkg="asl_turtlebot" type="turtle_tf_broadcaster.py" name="turtle_tf_broadcaster"/>
   <node pkg="asl_turtlebot" type="goal_commander.py" name="goal_commander"/>
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find asl_turtlebot)/rviz/final_project.rviz"/>
 </launch>
