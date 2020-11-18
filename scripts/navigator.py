@@ -113,7 +113,7 @@ class Navigator:
 
         # indicators for state machine additions
         self.delivery_mode = False #0 is EXPLORATION, 1 is DELIVERY
-        self.fully_explored = False #whether or not space is judged as fully explored
+        self.fully_explored = rospy.get_param("~fully_explored", False) #whether or not space is judged as fully explored
         self.has_meowed = False #whether or not we have meowed/cheered at a currrently visible cat/beer
         self.detectedStopSign = False
         self.detectedCat = False

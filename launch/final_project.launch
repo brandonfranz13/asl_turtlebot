@@ -7,6 +7,7 @@
   <arg name="gui" default="false"/>
   <arg name="om_max" default="0.8"/>
   <arg name="v_max" default="0.4"/>
+  <arg name="fully_explored" default="False"/>
 
   <rosparam param="sim">true</rosparam>
   <rosparam param="map">true</rosparam>
@@ -66,6 +67,7 @@
   <node pkg="asl_turtlebot" type="navigator.py" name="turtlebot_navigator" output="screen">
         <param name="om_max" value="$(arg om_max)"/>
         <param name="v_max" value="$(arg v_max)"/>
+		<param name="fully_explored" value="$(arg fully_explored)"/>
   </node>
   <node pkg="asl_turtlebot" type="detector_mobilenet.py" name="turtlebot_detector"/>
   
