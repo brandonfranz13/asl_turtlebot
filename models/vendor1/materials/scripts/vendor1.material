@@ -7,7 +7,7 @@ material zebra
       texture_unit
       {
 	    
-        texture textures/zebra.jpg
+        texture ../textures/zebra.jpg
 	   
       }
     }

@@ -8,8 +8,9 @@ material bear
       texture_unit
       {
 	    
-        texture textures/bear.jpg
+        texture ../textures/bear.jpg
 	   
       }
     }
   }
+}
