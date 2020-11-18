@@ -46,6 +46,8 @@ class Navigator:
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0 #initial state is set as point of origin for x, y and theta
+        
+        self.home = (0,0,0)
 
         # goal state
         self.x_g = None
@@ -146,12 +148,15 @@ class Navigator:
         # Stop sign detector
         rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
 
-        # Cat detector
+        # Beer detector
         rospy.Subscriber('/detector/beer', DetectedObject, self.cat_detected_callback) #detecting beer, not cat
-        ####################################################
+
         # Subscribe to vendors
-        #rospy.Subscriber('/detector/zebra', DetectedObject, self.vendor_callback)
-        ####################################################
+        rospy.Subscriber('/detector/giraffe', DetectedObject, self.vendor_callback)
+        rospy.Subscriber('/detector/horse', DetectedObject, self.vendor_callback)
+        rospy.Subscriber('/detector/bear', DetectedObject, self.vendor_callback)
+        rospy.Subscriber('/detector/zebra', DetectedObject, self.vendor_callback)
+
         # Publisher for "meow" message
         self.messages = rospy.Publisher('/mensaje', String, queue_size=10)
         mensaje = String()
@@ -473,12 +478,12 @@ class Navigator:
             # alpha = -msg.thetaright
         # else:
             # alpha = 0        
-        (translation,rotation) = self.trans_listener.lookupTransform('/base_footprint', '/zebra_tf', rospy.Time(0))
-        vendor_x = translation[0]
-        vendor_y = translation[1]
-        euler = tf.transformations.euler_from_quaternion(rotation)
-        vendor_theta = euler[2]
-        
+        # (translation,rotation) = self.trans_listener.lookupTransform('/base_footprint', '/zebra_tf', rospy.Time(0))
+        # vendor_x = translation[0]
+        # vendor_y = translation[1]
+        # euler = tf.transformations.euler_from_quaternion(rotation)
+        # vendor_theta = euler[2]
+        vendor_x, vendor_y, vendor_theta = 0, 0, 1
         if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
             self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
     
@@ -567,6 +572,7 @@ class Navigator:
                     
             ################# TRACK ####################
             elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
+##EXTENSION     # Collision Avoidance
                 if self.collisionImminent: # backs up until outside collision threshold
                     rospy.loginfo("Collision Imminent: Backing up and replanning")
                     # while self.collisionImminent:
@@ -643,7 +649,7 @@ class Navigator:
                     if not goal_origin(): #if initial position is not the current goal
                         self.switch_mode(Mode.RTB)
                         
-            ################# STOP ####################
+##EXTENSION ################# STOP ####################
             elif self.mode == Mode.STOP:
                 # At a stop sign
                 if not self.has_stopped(): #timer hasn't run out yet
