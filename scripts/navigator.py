@@ -174,6 +174,7 @@ class Navigator:
         self.pose_controller.k2 = config["k2"]
         self.pose_controller.k3 = config["k3"]
         self.spline_alpha = config["alpha"]
+        self.fully_explored = config["fully_explored"]
         return config
 
     def cmd_nav_callback(self, data):
@@ -239,8 +240,7 @@ class Navigator:
             self.goal_list = [self.vendor_catalogue[vendor] for vendor in self.delivery_request, self.home]
             self.goal_list.append(self.home)
             print("Order Received. Out for delivery!")
-            self.fully_explored = True
-            self.switch_mode(Mode.PICKUP)
+            self.switch_mode(Mode.START_DELIVERY)
 
     def near_goal(self):
         """
