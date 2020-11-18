@@ -7,7 +7,7 @@ material dog
       texture_unit
       {
 	    
-        texture textures/dog.jpg
+        texture ../textures/dog.jpg
 	   
       }
     }

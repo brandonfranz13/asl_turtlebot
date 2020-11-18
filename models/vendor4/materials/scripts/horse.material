@@ -7,7 +7,7 @@ material horse
       texture_unit
       {
 	    
-        texture textures/horse.jpg
+        texture ../textures/horse.jpg
 	   
       }
     }

@@ -7,7 +7,7 @@ material giraffe
       texture_unit
       {
 	    
-        texture textures/giraffe.jpg
+        texture ../textures/giraffe.jpg
 	    
       }
     }

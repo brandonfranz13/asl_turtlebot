@@ -118,13 +118,13 @@ class Navigator:
         self.detectedStopSign = False
         self.detectedCat = False
         self.stop_time = rospy.get_param("~stop_time", 3.) # Time to stop at a stop sign
-        self.stop_min_dist = rospy.get_param("~stop_min_dist", 0.5) # Minimum distance from a stop sign to obey it
+        self.stop_min_dist = rospy.get_param("~stop_min_dist", 0.8) # Proximity from a stop sign to obey it
         self.pickup_time = rospy.get_param("~pickup_time", 4.) # Time taken to pick food up at a vendor between 3 and 5 seconds
 
         # Obstacle avoidance
         self.laser_ranges = []
         self.collisionImminent = False
-        self.collisionThreshold = 0.15
+        self.collisionThreshold = 0.008 # was 0.15 previously
         self.obstacle_padding = 0.4
         self.laser_angle_increment = 0.1
 

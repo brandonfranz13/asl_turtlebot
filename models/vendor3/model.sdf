@@ -20,7 +20,7 @@
 	  <script>
 	    <uri>model://vendor3/materials/scripts</uri>
 	    <uri>model://vendor3/materials/textures</uri>
-	    <name>shoe</name>
+	    <name>cow</name>
 	  </script>
 	</material>
       </visual>

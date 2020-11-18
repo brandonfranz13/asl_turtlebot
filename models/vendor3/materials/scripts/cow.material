@@ -1,5 +1,5 @@
 
-material shoe
+material cow
 {
   technique
   {
@@ -8,7 +8,7 @@ material shoe
       texture_unit
       {
 	    
-        texture textures/shoe.jpg
+        texture ../textures/cow.jpg
 	   
       }
     }
