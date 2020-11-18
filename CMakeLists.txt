@@ -8,9 +8,11 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf
+  turtlesim
   tf_broadcast
   message_generation
-	dynamic_reconfigure
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -51,6 +53,7 @@ add_message_files(
  FILES
  DetectedObject.msg
  DetectedObjectList.msg
+ Vendor.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -71,6 +74,7 @@ add_message_files(
 generate_messages(
  DEPENDENCIES
  std_msgs
+ turtlesim
 )
 
 ################################################
