@@ -127,7 +127,10 @@ class Navigator:
         self.collisionThreshold = 0.15
         self.obstacle_padding = 0.4
         self.laser_angle_increment = 0.1
-
+        
+        # Vendor Catalogue
+        self.vendor_catalogue = {}
+        
         # list of goals, in order
         self.goal_list = [] #implement as a list of three-element tuples, with the last tuple being all zeroes (original position)
 
@@ -147,7 +150,7 @@ class Navigator:
         rospy.Subscriber('/detector/beer', DetectedObject, self.cat_detected_callback) #detecting beer, not cat
         ####################################################
         # Subscribe to vendors
-        #rospy.Subscriber('/vendors', VendorList, self.vendor_callback)
+        #rospy.Subscriber('/detector/zebra', DetectedObject, self.vendor_callback)
         ####################################################
         # Publisher for "meow" message
         self.messages = rospy.Publisher('/mensaje', String, queue_size=10)
@@ -224,7 +227,10 @@ class Navigator:
         
         if isWaiting():
             self.delivery_request = [request.strip() for request in msg.data.split(',')]
+            self.goal_list = [self.vendor_catalogue[vendor] for vendor in self.delivery_request, self.home]
+            self.goal_list.append(self.home)
             print("Order Received. Out for delivery!")
+            self.switch_mode(Mode.PICKUP)
 
     def near_goal(self):
         """
@@ -451,9 +457,30 @@ class Navigator:
         if self.mode == Mode.TRACK or self.mode == Mode.PARK and dist > 0:
             self.init_cat()
 
-    # def vendor_callback(self, msg):
-        # """ callback for the list of vendors we build """
-        # self.goal_list.append(msg)
+    def vendor_callback(self, msg):
+        """ callback for the list of vendors we build 
+        object_msg.id = cl
+                object_msg.name = self.object_labels[cl]
+                object_msg.confidence = sc
+                object_msg.distance = dist
+                object_msg.thetaleft = thetaleft
+                object_msg.thetaright = thetaright
+                object_msg.corners = [ymin,xmin,ymax,xmax]
+        """
+        # if msg.thetaleft > msg.thetaright:
+            # alpha = msg.thetaleft
+        # elif msg.thetaleft < msg.thetaright:
+            # alpha = -msg.thetaright
+        # else:
+            # alpha = 0        
+        (translation,rotation) = self.trans_listener.lookupTransform('/base_footprint', '/zebra_tf', rospy.Time(0))
+        vendor_x = translation[0]
+        vendor_y = translation[1]
+        euler = tf.transformations.euler_from_quaternion(rotation)
+        vendor_theta = euler[2]
+        
+        if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
+            self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
     
     def at_goal(self):
         """
