@@ -486,6 +486,8 @@ class Navigator:
         vendor_x, vendor_y, vendor_theta = 0, 0, 1
         if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
             self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
+        print("Vendor Catalogue")
+        print(self.vendor_catalogue[msg.name])
     
     def at_goal(self):
         """
