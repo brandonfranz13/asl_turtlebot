@@ -18,8 +18,9 @@
         </geometry>
 	<material>
 	  <script>
-	    <uri>file://media/materials/scripts/gazebo.material</uri>
-	    <name>Gazebo/WoodPallet</name>
+	    <uri>model://vendor2/materials/scripts</uri>
+	    <uri>model://vendor2/materials/textures</uri>
+	    <name>giraffe</name>
 	  </script>
 	</material>
       </visual>

@@ -1,0 +1,15 @@
+material giraffe
+{
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+	    
+        texture textures/giraffe.jpg
+	    
+      }
+    }
+  }
+}

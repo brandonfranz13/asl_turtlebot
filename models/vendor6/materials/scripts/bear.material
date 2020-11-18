@@ -1,0 +1,15 @@
+
+material bear
+{
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+	    
+        texture textures/bear.jpg
+	   
+      }
+    }
+  }

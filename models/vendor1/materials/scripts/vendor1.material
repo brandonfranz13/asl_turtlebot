@@ -1,0 +1,17 @@
+material zebra
+{
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+	    
+        texture textures/zebra.jpg
+	   
+      }
+    }
+  }
+}
+
+

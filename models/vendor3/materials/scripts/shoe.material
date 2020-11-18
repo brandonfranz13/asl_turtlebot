@@ -1,0 +1,16 @@
+
+material shoe
+{
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+	    
+        texture textures/shoe.jpg
+	   
+      }
+    }
+  }
+}

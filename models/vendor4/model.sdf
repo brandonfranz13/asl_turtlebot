@@ -18,8 +18,9 @@
         </geometry>
 	<material>
 	  <script>
-	    <uri>file://media/materials/scripts/gazebo.material</uri>
-	    <name>Gazebo/Yellow</name>
+	    <uri>model://vendor4/materials/scripts</uri>
+	    <uri>model://vendor4/materials/textures</uri>
+	    <name>horse</name>
 	  </script>
 	</material>
       </visual>
