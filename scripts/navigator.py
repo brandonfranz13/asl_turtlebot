@@ -158,6 +158,8 @@ class Navigator:
         rospy.Subscriber('/detector/horse', DetectedObject, self.vendor_callback)
         rospy.Subscriber('/detector/bear', DetectedObject, self.vendor_callback)
         rospy.Subscriber('/detector/zebra', DetectedObject, self.vendor_callback)
+        rospy.Subscriber('/detector/cow', DetectedObject, self.vendor_callback)
+        rospy.Subscriber('/detector/dog', DetectedObject, self.vendor_callback)
 
         # Publisher for "meow" message
         self.messages = rospy.Publisher('/mensaje', String, queue_size=10)
@@ -478,7 +480,10 @@ class Navigator:
         vendor_x = msg.distance * np.cos(avgTheta)
         vendor_y = msg.distance * np.sin(avgTheta)
         vendor_theta = avgTheta
-
+        print("Condition to publish vendor")
+        print(self.vendor_catalogue.has_key(msg.name))
+        print("I do what I want")
+        
         if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
             self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
             self.vendor_pub = rospy.Publisher('/vendor/pose', Vendor, queue_size=10)
