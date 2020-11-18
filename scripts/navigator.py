@@ -86,7 +86,7 @@ class Navigator:
         self.at_thresh_theta = 0.05
 
         # trajectory smoothing
-        self.spline_alpha = 0.15
+        self.spline_alpha = 0.01
         self.traj_dt = 0.1
 
         # trajectory tracking controller parameters
@@ -124,8 +124,8 @@ class Navigator:
         # Obstacle avoidance
         self.laser_ranges = []
         self.collisionImminent = False
-        self.collisionThreshold = 0.2
-        self.obstacle_padding = 0.1
+        self.collisionThreshold = 0.15
+        self.obstacle_padding = 0.4
         self.laser_angle_increment = 0.1
 
         # list of goals, in order
@@ -184,8 +184,7 @@ class Navigator:
         self.map_origin = (msg.origin.position.x,msg.origin.position.y)
 
     def map_callback(self,msg):
-        """
-        receives new map info and updates the map
+        """receives new map info and updates the map
         """
         self.map_probs = msg.data
         # if we've received the map metadata and have a way to update it:
@@ -203,9 +202,7 @@ class Navigator:
                 self.replan() # new map, need to replan
 
     def shutdown_callback(self):
-        """
-        publishes zero velocities upon rospy shutdown
-        """
+        """ publishes zero velocities upon rospy shutdown """
         cmd_vel = Twist()
         cmd_vel.linear.x = 0.0
         cmd_vel.angular.z = 0.0
@@ -237,15 +234,13 @@ class Navigator:
         return linalg.norm(np.array([self.x-self.x_g, self.y-self.y_g])) < self.near_thresh
 
     def aligned(self):
-        """
-        returns whether robot is aligned with starting direction of path
+        """returns whether robot is aligned with starting direction of path
         (enough to switch to tracking controller)
         """        
         return (abs(wrapToPi(self.theta - wrapToPi(self.th_init))) < self.theta_start_thresh)
     
     def aligned_to_object(self, object_theta):
-        """
-        returns whether robot is aligned to an object
+        """returns whether robot is aligned to an object
         """      
         print("Aligned to object data")
         print(self.theta)
@@ -489,7 +484,7 @@ class Navigator:
     def backup(self, decay=0.8, time_to_backup = 0.25):
         """ Put robot in reverse """
         start = rospy.get_time()
-        velocity = self.v_max
+        velocity = -self.v_max
         while (rospy.get_time() - start) < time_to_backup:
             cmd_vel = Twist()
             velocity = decay * velocity
@@ -549,7 +544,23 @@ class Navigator:
                     rospy.loginfo("Collision Imminent: Backing up and replanning")
                     # while self.collisionImminent:
                         # self.backup()
-                    collision_object_theta = np.argmin(self.laser_ranges) * self.laser_angle_increment + np.pi
+		    print('just for kicks')
+		    print(np.any([range < self.collisionThreshold for range in self.laser_ranges]))
+                    collision_indices = np.nonzero(np.array(list(self.laser_ranges)) < self.collisionThreshold)
+		    print(self.laser_ranges)
+		    print('middle step')
+		    print(collision_indices)
+		    #collision_indices = collision_indices.flatten() 
+		    print('collision indices:')
+		    print(collision_indices)
+		    collision_thetas = self.laser_angle_increment * collision_indices[0]
+		    print('collision_thetas')
+		    print(collision_thetas)
+		    print('WOWZA')
+		    print(np.asarray(self.laser_ranges)[collision_indices])
+		    
+		    weighted_thetas = (1/sum(np.min(np.asarray(self.laser_ranges)[collision_indices])/np.asarray(self.laser_ranges)[collision_indices]))*collision_thetas*(np.min(np.asarray(self.laser_ranges)[collision_indices]))/np.asarray(self.laser_ranges)[collision_indices]   
+		    collision_object_theta = sum(weighted_thetas)+np.pi
                     self.heading_controller.load_goal(collision_object_theta)
                     print("YOU SPIN ME RIGHT ROUND")
                     while not self.aligned_to_object(collision_object_theta):
@@ -560,7 +571,7 @@ class Navigator:
                         cmd_vel.angular.z = om
                         self.nav_vel_pub.publish(cmd_vel)
                     print("BACKING UP")    
-                    self.backup(0.9, 0.6)
+                    self.backup(0.9995, 0.5)
                     self.stay_idle()
                     self.replan()
                     self.switch_mode(Mode.ALIGN)
