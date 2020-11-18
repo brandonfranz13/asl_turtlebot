@@ -239,6 +239,7 @@ class Navigator:
             self.goal_list = [self.vendor_catalogue[vendor] for vendor in self.delivery_request, self.home]
             self.goal_list.append(self.home)
             print("Order Received. Out for delivery!")
+            self.fully_explored = True
             self.switch_mode(Mode.PICKUP)
 
     def near_goal(self):
