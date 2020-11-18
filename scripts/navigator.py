@@ -6,6 +6,7 @@ from geometry_msgs.msg import Twist, Pose2D, PoseStamped
 from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan
 from asl_turtlebot.msg import DetectedObject
+from tf_broadcast.msg import Vendor
 import tf
 import numpy as np
 from numpy import linalg
@@ -480,10 +481,10 @@ class Navigator:
 
         if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
             self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
-            self.vendor_pub = rospy.Publisher('/%s/pose' % msg.name, Vendor, queue_size=10)
+            self.vendor_pub = rospy.Publisher('/vendor/pose', Vendor, queue_size=10)
             
             vendor_msg = Vendor()
-            vendor_msg.name = msg.name
+            vendor_msg.vendor_name = msg.name
             vendor_msg.pose.x = vendor_x
             vendor_msg.pose.y = vendor_y
             vendor_msg.pose.theta = vendor_theta
