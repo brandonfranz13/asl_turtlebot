@@ -125,7 +125,7 @@ class Navigator:
         self.stop_min_dist = rospy.get_param("~stop_min_dist", 0.8) # Proximity from a stop sign to obey it
         self.pickup_time = rospy.get_param("~pickup_time", 4.) # Time taken to pick food up at a vendor between 3 and 5 seconds
 	self.crossing_time = rospy.get_param("~crossing_time", 6.) # Time taken to cross an intersection
-
+        self.pickup_start = 0
         # Obstacle avoidance
         self.laser_ranges = []
         self.collisionImminent = False
@@ -136,7 +136,8 @@ class Navigator:
         # Vendor Catalogue
         self.vendor_catalogue = {}
         self.num_vendor_pubs = 10
-        
+        self.delivery_request = None
+
         # list of goals, in order
         self.goal_list = [] #implement as a list of three-element tuples, with the last tuple being all zeroes (original position)
 
@@ -238,7 +239,7 @@ class Navigator:
         
         if isWaiting():
             self.delivery_request = [request.strip() for request in msg.data.split(',')]
-            self.goal_list = [self.vendor_catalogue[vendor] for vendor in self.delivery_request, self.home]
+            self.goal_list = [self.vendor_catalogue[vendor] for vendor in self.delivery_request]
             self.goal_list.append(self.home)
             print("Order Received. Out for delivery!")
             self.switch_mode(Mode.START_DELIVERY)
@@ -433,6 +434,10 @@ class Navigator:
         self.cross_start = rospy.get_rostime()
         self.mode = Mode.CROSS
 
+    def init_pickup(self):
+        self.pickup_start = rospy.get_rostime()
+        self.mode = Mode.PICKUP
+
     def has_stopped(self):
         """ checks if stop sign maneuver is over """
 
@@ -519,14 +524,7 @@ class Navigator:
             for i in range(self.num_vendor_pubs):
                 self.vendor_pub.publish(vendor_msg)
             
-            # Convert to world coordinates
-            (translation,rotation) = self.trans_listener.lookupTransform('base_camera', 'map', rospy.Time(0))
-            vendor_x = translation[0]
-            vendor_y = translation[1]
-            euler = tf.transformations.euler_from_quaternion(rotation)
-            vendor_theta = euler[2]
-            
-            self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
+            self.vendor_catalogue[msg.name] = (self.x, self.y, self.theta)
             
             print("Vendor Catalogue")
             print(self.vendor_catalogue)
@@ -543,7 +541,7 @@ class Navigator:
         returns whether the robot is close enough in position to the original
         position to return to idle state
         """
-        return (linalg.norm(np.array([self.x-0.0, self.y-0.0])) < self.near_thresh and abs(wrapToPi(self.theta - 0.0)) < self.at_thresh_theta)
+        return (linalg.norm(np.array([self.x-self.home[0], self.y-self.home[1]])) < self.near_thresh and abs(wrapToPi(self.theta - self.home[2])) < self.at_thresh_theta)
 
     def goal_origin(self):
         """
@@ -604,9 +602,10 @@ class Navigator:
             if self.mode == Mode.IDLE: #awaiting instructions
                 #pass
                 self.fully_explored = rospy.get_param("~fully_explored")
-                if self.fully_explored and not self.delivery_mode: #in exploration mode, we are notified the environment is fully explored
+                if self.fully_explored and not self.at_origin() and not self.delivery_mode: #in exploration mode, we are notified the environment is fully explored
                     self.mode = Mode.RTB #return to initial position for transition to delivery mode
-                    
+                elif self.delivery_mode:
+                    self.mode = Mode.PICKUP 
             ################# ALIGN ####################
             elif self.mode == Mode.ALIGN: #rotating to face the direction indicated by the start of the path
                 if self.aligned():
@@ -725,7 +724,8 @@ class Navigator:
                     self.theta_g = self.goal_list[0][2]
                     self.goal_list.pop(0) #remove the first tuple from our list of goals
                     self.mode = Mode.ALIGN #resume movement (from beginning)
-            
+                    self.replan()
+
             ################# RETURN TO BASE (RTB) #################### 
             elif self.mode == Mode.RTB:
                 self.x_g = self.home[0]
@@ -738,7 +738,8 @@ class Navigator:
             ################# START DELIVERY #################### 
             elif self.mode == Mode.START_DELIVERY: #this state transitions to delivery mode
                 self.delivery_mode = True #switch to delivery mode
-                self.mode = Mode.IDLE
+                self.mode = Mode.PICKUP
+                self.init_pickup()
             
             rospy.loginfo(self.mode)
             self.publish_control()
