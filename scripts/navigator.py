@@ -660,9 +660,9 @@ class Navigator:
                     self.has_meowed = False #reset in case a new one is detected
 
                 ## For marking complete exploration
-                elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not near a goal
-                    if not self.goal_origin(): #if initial position is not the current goal
-                        self.switch_mode(Mode.RTB)
+                # elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not near a goal
+                    # if not self.goal_origin(): #if initial position is not the current goal
+                        # self.switch_mode(Mode.RTB)
                 elif not self.close_to_plan_start():
                     rospy.loginfo("replanning because far from start")
                     self.replan()
