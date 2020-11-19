@@ -48,7 +48,7 @@ class Navigator:
         self.y = 0.0
         self.theta = 0.0 #initial state is set as point of origin for x, y and theta
         
-        self.home = (0,0,0)
+        self.home = (3.3, 0.3, 3.14)
 
         # goal state
         self.x_g = None
@@ -130,7 +130,7 @@ class Navigator:
         self.laser_ranges = []
         self.collisionImminent = False
         self.collisionThreshold = 0.008 # was 0.15 previously
-        self.obstacle_padding = 0.5
+        self.obstacle_padding = 0.6
         self.laser_angle_increment = 0.1
         
         # Vendor Catalogue
@@ -688,9 +688,9 @@ class Navigator:
                     self.has_meowed = False #reset in case a new one is detected
 
                 #For marking complete exploration"""
-                elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not at the goal
-                    if not goal_origin(): #if initial position is not the current goal
-                        self.switch_mode(Mode.RTB)
+                # elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not at the goal
+                    # if not self.goal_origin(): #if initial position is not the current goal
+                        # self.switch_mode(Mode.RTB)
                         
 ##EXTENSION ################# STOP ####################
             elif self.mode == Mode.STOP:
@@ -728,9 +728,9 @@ class Navigator:
             
             ################# RETURN TO BASE (RTB) #################### 
             elif self.mode == Mode.RTB:
-                self.x_g = 3.3
-                self.y_g = 0.3
-                self.theta_g = 3.14 #set next goal position to be the point of orign
+                self.x_g = self.home[0]
+                self.y_g = self.home[1]
+                self.theta_g = self.home[2] #set next goal position to be the point of orign
                 self.mode = Mode.ALIGN #resume movement
                 self.replan()
                 print("RTTTTTTBBBBBB")
