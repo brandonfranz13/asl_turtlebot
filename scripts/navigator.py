@@ -124,6 +124,7 @@ class Navigator:
         self.stop_time = rospy.get_param("~stop_time", 3.) # Time to stop at a stop sign
         self.stop_min_dist = rospy.get_param("~stop_min_dist", 0.8) # Proximity from a stop sign to obey it
         self.pickup_time = rospy.get_param("~pickup_time", 4.) # Time taken to pick food up at a vendor between 3 and 5 seconds
+	self.crossing_time = rospy.get_param("~crossing_time", 6.) # Time taken to cross an intersection
 
         # Obstacle avoidance
         self.laser_ranges = []
@@ -313,7 +314,9 @@ class Navigator:
             V, om = self.traj_controller.compute_control(self.x, self.y, self.theta, t)
         elif self.mode == Mode.ALIGN:
             V, om = self.heading_controller.compute_control(self.x, self.y, self.theta, t)
-        else:
+        elif self.mode == Mode.CROSS:
+	    V, om = self.pass_sign()
+	else:
             V = 0.
             om = 0.
 
@@ -401,13 +404,15 @@ class Navigator:
         print(traj_new[-20:, 2])
         self.heading_controller.load_goal(wrapToPi(self.th_init))
 
-        if not self.aligned():
-            rospy.loginfo("Not aligned with start direction")
-            self.switch_mode(Mode.ALIGN)
-            return
+	if self.mode != Mode.CROSS and self.mode != Mode.STOP: # Added in because this ignores the FSM entirely
+            if not self.aligned():
+                rospy.loginfo("Not aligned with start direction")
+                self.switch_mode(Mode.ALIGN)
+                return
 
-        rospy.loginfo("Ready to track")
-        self.switch_mode(Mode.TRACK)
+            rospy.loginfo("Ready to track")
+
+	    self.switch_mode(Mode.TRACK)
 
     ## new functions & functions from supervisor.py
     def init_stop_sign(self):
@@ -424,6 +429,7 @@ class Navigator:
     def init_crossing(self):
         """ initiates an intersection crossing maneuver """
 
+	print("MMmmmm dem cheeks")
         self.cross_start = rospy.get_rostime()
         self.mode = Mode.CROSS
 
@@ -440,9 +446,10 @@ class Navigator:
                rospy.get_rostime() - self.pickup_start > rospy.Duration.from_sec(self.pickup_time)
 
     def has_crossed(self):
-        """ checks if crossing maneuver is over (stop sign no longer visible)"""
+        """ checks if crossing maneuver is over (time in cross maneuver is longer than crossing_time)"""
 
-        return self.mode == Mode.CROSS and not self.hasDetectedStopSign()
+        return self.mode == Mode.CROSS and \
+	       rospy.get_rostime() - self.cross_start > rospy.Duration.from_sec(self.crossing_time)
 
     def stop_sign_detected_callback(self, msg):
         """ callback for when the detector has found a stop sign. Note that
@@ -477,6 +484,15 @@ class Navigator:
                 object_msg.thetaright = thetaright
                 object_msg.corners = [ymin,xmin,ymax,xmax]
         """
+<<<<<<< HEAD
+        avgTheta = (msg.thetaleft + msg.thetaright) / 2. + self.theta
+	print('going the distance!')
+	print(msg.distance)
+        vendor_x = msg.distance * np.cos(avgTheta) 
+        vendor_y = msg.distance * np.sin(avgTheta) 
+        vendor_theta = avgTheta
+=======
+>>>>>>> 59d2f715502d49fa733925c98a7a58e297dbd627
         print("Condition to publish vendor")
         print(self.vendor_catalogue.has_key(msg.name))
         print("I do what I want")
@@ -490,11 +506,16 @@ class Navigator:
             self.vendor_pub = rospy.Publisher('/vendor/pose', Vendor, queue_size=10)
             
             vendor_msg = Vendor()
+	    print('the supposed vendor name')
+	    print(msg.name)
             vendor_msg.vendor_name = msg.name
-            vendor_msg.pose.x = vendor_x
-            vendor_msg.pose.y = vendor_y
-            vendor_msg.pose.theta = vendor_theta
+            vendor_msg.pose.x = self.x+vendor_x+np.pi # Add the current position of the robot
+            vendor_msg.pose.y = self.y+vendor_y+np.pi
+            vendor_msg.pose.theta = self.theta
             
+<<<<<<< HEAD
+            self.vendor_pub.publish(vendor_msg)
+=======
             self.vendor_pub.publish()
             
             # Convert to world coordinates
@@ -506,6 +527,7 @@ class Navigator:
             
             self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
             
+>>>>>>> 59d2f715502d49fa733925c98a7a58e297dbd627
             print("Vendor Catalogue")
             print(msg.name)
             print(self.vendor_catalogue[msg.name])
@@ -549,15 +571,13 @@ class Navigator:
 
     def pass_sign(self):
         """ move, ignoring stop sign """
+	t = self.get_current_plan_time() 
         if self.near_goal():
             V, om = self.pose_controller.compute_control(self.x, self.y, self.theta, t)
         else:
             V, om = self.traj_controller.compute_control(self.x, self.y, self.theta, t)
 
-        cmd_vel = Twist()
-        cmd_vel.linear.x = V
-        cmd_vel.angular.z = om
-        self.nav_vel_pub.publish(cmd_vel)
+        return V, om
         
     def update_state(self):
         (translation,rotation) = self.trans_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
@@ -684,7 +704,8 @@ class Navigator:
             elif self.mode == Mode.CROSS:
                 # Crossing an intersection
                 if not self.has_crossed(): #stop sign is still visible
-                        self.pass_sign() #keep moving and ignoring sign
+		    pass
+                    #self.pass_sign() #keep moving and ignoring sign
                 else:
                     self.mode = Mode.TRACK #resume movement
             
