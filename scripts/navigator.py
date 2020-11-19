@@ -130,11 +130,12 @@ class Navigator:
         self.laser_ranges = []
         self.collisionImminent = False
         self.collisionThreshold = 0.008 # was 0.15 previously
-        self.obstacle_padding = 0.4
+        self.obstacle_padding = 0.5
         self.laser_angle_increment = 0.1
         
         # Vendor Catalogue
         self.vendor_catalogue = {}
+        self.num_vendor_pubs = 10
         
         # list of goals, in order
         self.goal_list = [] #implement as a list of three-element tuples, with the last tuple being all zeroes (original position)
@@ -240,7 +241,7 @@ class Navigator:
             self.goal_list = [self.vendor_catalogue[vendor] for vendor in self.delivery_request, self.home]
             self.goal_list.append(self.home)
             print("Order Received. Out for delivery!")
-            self.switch_mode(Mode.PICKUP)
+            self.switch_mode(Mode.START_DELIVERY)
 
     def near_goal(self):
         """
@@ -483,24 +484,25 @@ class Navigator:
                 object_msg.thetaright = thetaright
                 object_msg.corners = [ymin,xmin,ymax,xmax]
         """
-<<<<<<< HEAD
-        avgTheta = (msg.thetaleft + msg.thetaright) / 2. + self.theta
+        avgTheta = (wrapToPi(msg.thetaleft) + wrapToPi(msg.thetaright)) / 2.
+	print('angles angles angle')
+	print(msg.thetaleft)
+	print(msg.thetaright)
+	print(avgTheta)
 	print('going the distance!')
 	print(msg.distance)
         vendor_x = msg.distance * np.cos(avgTheta) 
         vendor_y = msg.distance * np.sin(avgTheta) 
         vendor_theta = avgTheta
-=======
->>>>>>> 59d2f715502d49fa733925c98a7a58e297dbd627
         print("Condition to publish vendor")
         print(self.vendor_catalogue.has_key(msg.name))
         print("I do what I want")
         
         if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
-            avgTheta = (msg.thetaleft + msg.thetaright) / 2.
-            vendor_x = msg.distance * np.cos(avgTheta)
-            vendor_y = msg.distance * np.sin(avgTheta)
-            vendor_theta = avgTheta
+            #avgTheta = (wrapTomsg.thetaleft + msg.thetaright) / 2.
+            #vendor_x = msg.distance * np.cos(avgTheta)
+            #vendor_y = msg.distance * np.sin(avgTheta)
+            #vendor_theta = avgTheta
             
             self.vendor_pub = rospy.Publisher('/vendor/pose', Vendor, queue_size=10)
             
@@ -508,17 +510,17 @@ class Navigator:
 	    print('the supposed vendor name')
 	    print(msg.name)
             vendor_msg.vendor_name = msg.name
-            vendor_msg.pose.x = self.x+vendor_x+np.pi # Add the current position of the robot
-            vendor_msg.pose.y = self.y+vendor_y+np.pi
+            #vendor_msg.pose.x = self.x+vendor_x+np.pi # Add the current position of the robot
+            #vendor_msg.pose.y = self.y+vendor_y+np.pi
+	    vendor_msg.pose.x = vendor_x # Add the current position of the robot
+            vendor_msg.pose.y = vendor_y
             vendor_msg.pose.theta = self.theta
             
-<<<<<<< HEAD
-            self.vendor_pub.publish(vendor_msg)
-=======
-            self.vendor_pub.publish()
+            for i in range(self.num_vendor_pubs):
+                self.vendor_pub.publish(vendor_msg)
             
             # Convert to world coordinates
-            (translation,rotation) = self.trans_listener.lookupTransform('base_camera', 'world', rospy.Time(0))
+            (translation,rotation) = self.trans_listener.lookupTransform('base_camera', 'map', rospy.Time(0))
             vendor_x = translation[0]
             vendor_y = translation[1]
             euler = tf.transformations.euler_from_quaternion(rotation)
@@ -526,10 +528,8 @@ class Navigator:
             
             self.vendor_catalogue[msg.name] = (vendor_x, vendor_y, vendor_theta)
             
->>>>>>> 59d2f715502d49fa733925c98a7a58e297dbd627
             print("Vendor Catalogue")
-            print(msg.name)
-            print(self.vendor_catalogue[msg.name])
+            print(self.vendor_catalogue)
     
     def at_goal(self):
         """
@@ -603,6 +603,7 @@ class Navigator:
             ################# IDLE ####################
             if self.mode == Mode.IDLE: #awaiting instructions
                 #pass
+                self.fully_explored = rospy.get_param("~fully_explored")
                 if self.fully_explored and not self.delivery_mode: #in exploration mode, we are notified the environment is fully explored
                     self.mode = Mode.RTB #return to initial position for transition to delivery mode
                     
@@ -731,6 +732,8 @@ class Navigator:
                 self.y_g = 0.0
                 self.theta_g = 0.0 #set next goal position to be the point of orign
                 self.mode = Mode.ALIGN #resume movement
+                self.replan()
+                print("RTTTTTTBBBBBB")
             
             ################# START DELIVERY #################### 
             elif self.mode == Mode.START_DELIVERY: #this state transitions to delivery mode
