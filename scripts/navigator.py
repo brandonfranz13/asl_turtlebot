@@ -729,9 +729,9 @@ class Navigator:
             
             ################# RETURN TO BASE (RTB) #################### 
             elif self.mode == Mode.RTB:
-                self.x_g = 0.0
-                self.y_g = 0.0
-                self.theta_g = 0.0 #set next goal position to be the point of orign
+                self.x_g = 3.3
+                self.y_g = 0.3
+                self.theta_g = 3.14 #set next goal position to be the point of orign
                 self.mode = Mode.ALIGN #resume movement
                 self.replan()
                 print("RTTTTTTBBBBBB")
