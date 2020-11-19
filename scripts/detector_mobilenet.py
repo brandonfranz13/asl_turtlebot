@@ -15,7 +15,7 @@ import math
 # path to the trained conv net
 PATH_TO_MODEL = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../tfmodels/ssd_mobilenet_v1_coco.pb')
 PATH_TO_LABELS = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../tfmodels/coco_labels.txt')
-
+os.environ["CUDA_VISIBLE_DEVICES"]="4"
 # set to True to use tensorflow and a conv net
 # False will use a very simple color thresholding to detect stop signs only
 USE_TF = True
