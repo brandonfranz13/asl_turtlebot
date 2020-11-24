@@ -1,4 +1,4 @@
-material zebra
+material bird
 {
   technique
   {
@@ -7,7 +7,7 @@ material zebra
       texture_unit
       {
 	    
-        texture ../textures/zebra.jpg
+        texture ../textures/bird.jpg
 	   
       }
     }

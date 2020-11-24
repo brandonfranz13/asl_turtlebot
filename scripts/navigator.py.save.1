@@ -21,10 +21,6 @@ from enum import Enum
 from dynamic_reconfigure.server import Server
 from asl_turtlebot.cfg import NavigatorConfig
 
-def wrapToTwoPi(angle):
-    sign = np.sign(angle)
-    return sign*(np.abs(angle)%(2*np.pi))+(sign<0)*2*np.pi
-
 # state machine modes, not all implemented
 class Mode(Enum):
     IDLE = 0 #agent is awaiting instructions
@@ -122,20 +118,19 @@ class Navigator:
         # indicators for state machine additions
         self.delivery_mode = False #0 is EXPLORATION, 1 is DELIVERY
         self.fully_explored = rospy.get_param("~fully_explored", False) #whether or not space is judged as fully explored
-        #self.has_meowed = False #whether or not we have meowed/cheered at a currrently visible cat/beer
+        self.has_meowed = False #whether or not we have meowed/cheered at a currrently visible cat/beer
         self.detectedStopSign = False
-        #self.detectedCat = False
+        self.detectedCat = False
         self.stop_time = rospy.get_param("~stop_time", 3.) # Time to stop at a stop sign
         self.stop_min_dist = rospy.get_param("~stop_min_dist", 0.8) # Proximity from a stop sign to obey it
         self.pickup_time = rospy.get_param("~pickup_time", 4.) # Time taken to pick food up at a vendor between 3 and 5 seconds
-	self.crossing_time = rospy.get_param("~crossing_time", 12.) # Time taken to cross an intersection
-        #self.pickup_start = 0
-        self.cat_timer = rospy.get_param("~cat_timer",12.) #Time between meows at cats
-	# Obstacle avoidance
+	self.crossing_time = rospy.get_param("~crossing_time", 6.) # Time taken to cross an intersection
+        self.pickup_start = 0
+        # Obstacle avoidance
         self.laser_ranges = []
         self.collisionImminent = False
         self.collisionThreshold = 0.15 # was 0.008 previously
-        self.obstacle_padding = 0.01 #0.4 
+        self.obstacle_padding = 0.4
         self.laser_angle_increment = 0.1
         
         # Vendor Catalogue
@@ -158,23 +153,21 @@ class Navigator:
         # Stop sign detector
         rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
 
-        # Beer/cat detector
-        rospy.Subscriber('/detector/cat', DetectedObject, self.cat_detected_callback) #detecting cat
+        # Beer detector
+        rospy.Subscriber('/detector/beer', DetectedObject, self.cat_detected_callback) #detecting beer, not cat
 
         # Subscribe to vendors
         rospy.Subscriber('/detector/giraffe', DetectedObject, self.vendor_callback)
         rospy.Subscriber('/detector/horse', DetectedObject, self.vendor_callback)
         rospy.Subscriber('/detector/bear', DetectedObject, self.vendor_callback)
-        #rospy.Subscriber('/detector/zebra', DetectedObject, self.vendor_callback)
-        rospy.Subscriber('/detector/bird', DetectedObject, self.vendor_callback)
-	rospy.Subscriber('/detector/cow', DetectedObject, self.vendor_callback)
-        #rospy.Subscriber('/detector/dog', DetectedObject, self.vendor_callback)
-	rospy.Subscriber('/detector/elephant', DetectedObject, self.vendor_callback)
+        rospy.Subscriber('/detector/zebra', DetectedObject, self.vendor_callback)
+        rospy.Subscriber('/detector/cow', DetectedObject, self.vendor_callback)
+        rospy.Subscriber('/detector/dog', DetectedObject, self.vendor_callback)
 
         # Publisher for "meow" message
-        self.messages = rospy.Publisher('/cute', String, queue_size=10)
-        #mensaje = String()
-        #mensaje.data = "Miao!" #message to broadcast in "meow" state
+        self.messages = rospy.Publisher('/mensaje', String, queue_size=10)
+        mensaje = String()
+        mensaje.data = "Saluti!" #message to broadcast in "meow" state
 
 	self.run_flag = True
 
@@ -220,7 +213,7 @@ class Navigator:
                                                   self.map_origin[1],
                                                   8,
                                                   self.map_probs)
-            if self.x_g is not None and self.mode != Mode.PICKUP:
+            if self.x_g is not None:
                 # if we have a goal to plan to, replan
                 rospy.loginfo("replanning because of new map")
                 self.replan() # new map, need to replan
@@ -250,9 +243,6 @@ class Navigator:
             self.delivery_request = [request.strip() for request in msg.data.split(',')]
             self.goal_list = [self.vendor_catalogue[vendor] for vendor in self.delivery_request]
             self.goal_list.append(self.home)
-	    print('made the delivery request')
-	    print('the goal_list is:')
-	    print(self.goal_list)
             print("Order Received. Out for delivery!")
             self.switch_mode(Mode.START_DELIVERY)
 
@@ -437,8 +427,7 @@ class Navigator:
     def init_cat(self):
         """initiates a message broadcast"""
         self.cat_start = rospy.get_rostime()
-        self.messages.publish("Miao!")
-        #self.mode = Mode.MEOW
+        self.mode = Mode.MEOW
 
     def init_crossing(self):
         """ initiates an intersection crossing maneuver """
@@ -448,12 +437,7 @@ class Navigator:
         self.mode = Mode.CROSS
 
     def init_pickup(self):
-	print('Starting a pickup')
-        print('vendor catalogue key/values')
-        for k, v in self.vendor_catalogue.iteritems():
-            print k, v
         self.pickup_start = rospy.get_rostime()
-	print("Counting four... three... two... one...")
         self.mode = Mode.PICKUP
 
     def has_stopped(self):
@@ -465,12 +449,8 @@ class Navigator:
     def has_picked_up(self):
         """ checks if pickup maneuver is over """
 
-	print("timer value: ",rospy.get_rostime() - self.pickup_start)
-
         return self.mode == Mode.PICKUP and \
                rospy.get_rostime() - self.pickup_start > rospy.Duration.from_sec(self.pickup_time)
-
-	#return rospy.get_rostime() - self.pickup_start > rospy.Duration.from_sec(self.pickup_time)
 
     def has_crossed(self):
         """ checks if crossing maneuver is over (time in cross maneuver is longer than crossing_time)"""
@@ -498,7 +478,7 @@ class Navigator:
         dist = msg.distance
 
         # if cat detected and in track or park mode, respond
-        if self.mode == Mode.TRACK or self.mode == Mode.PARK and dist > 0 and rospy.get_rostime() - self.cat_start > rospy.Duration.from_sec(self.cat_timer):
+        if self.mode == Mode.TRACK or self.mode == Mode.PARK and dist > 0:
             self.init_cat()
 
     def vendor_callback(self, msg):
@@ -512,30 +492,30 @@ class Navigator:
                 object_msg.corners = [ymin,xmin,ymax,xmax]
         """
         avgTheta = (wrapToPi(msg.thetaleft) + wrapToPi(msg.thetaright)) / 2.
-	#print('angles angles angle')
-	#print(msg.thetaleft)
-	#print(msg.thetaright)
-	#print(avgTheta)
-	#print('going the distance!')
-	#print(msg.distance)
+	print('angles angles angle')
+	print(msg.thetaleft)
+	print(msg.thetaright)
+	print(avgTheta)
+	print('going the distance!')
+	print(msg.distance)
         vendor_x = msg.distance * np.cos(avgTheta) 
         vendor_y = msg.distance * np.sin(avgTheta) 
         vendor_theta = avgTheta
-        #print("Condition to publish vendor")
-        #print(self.vendor_catalogue.has_key(msg.name))
-        #print("I do what I want")
+        print("Condition to publish vendor")
+        print(self.vendor_catalogue.has_key(msg.name))
+        print("I do what I want")
         
-        #if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
+        if not self.vendor_catalogue.has_key(msg.name): # make sure we don't change vendor location
             #avgTheta = (wrapTomsg.thetaleft + msg.thetaright) / 2.
             #vendor_x = msg.distance * np.cos(avgTheta)
             #vendor_y = msg.distance * np.sin(avgTheta)
             #vendor_theta = avgTheta
-        if msg.confidence > 0.95: # Threshold value to display the tf    
+            
             self.vendor_pub = rospy.Publisher('/vendor/pose', Vendor, queue_size=10)
             
             vendor_msg = Vendor()
-	    #print('the supposed vendor name')
-	    #print(msg.name)
+	    print('the supposed vendor name')
+	    print(msg.name)
             vendor_msg.vendor_name = msg.name
             #vendor_msg.pose.x = self.x+vendor_x+np.pi # Add the current position of the robot
             #vendor_msg.pose.y = self.y+vendor_y+np.pi
@@ -543,20 +523,20 @@ class Navigator:
             vendor_msg.pose.y = vendor_y
             vendor_msg.pose.theta = self.theta
             
-            #for i in range(self.num_vendor_pubs):
-            self.vendor_pub.publish(vendor_msg)
-            if not self.vendor_catalogue.has_key(msg.name):
-                self.vendor_catalogue[msg.name] = (self.x, self.y, self.theta)
+            for i in range(self.num_vendor_pubs):
+                self.vendor_pub.publish(vendor_msg)
             
-                #print("Vendor Catalogue")
-                #print(self.vendor_catalogue)
+            self.vendor_catalogue[msg.name] = (self.x, self.y, self.theta)
+            
+            print("Vendor Catalogue")
+            print(self.vendor_catalogue)
     
     def at_goal(self):
         """
         returns whether the robot has reached the goal position with enough
         accuracy to return to idle state
         """
-        return self.x_g != None and (linalg.norm(np.array([self.x-self.x_g, self.y-self.y_g])) < self.near_thresh and abs(wrapToPi(self.theta - self.theta_g)) < self.at_thresh_theta)
+        return (linalg.norm(np.array([self.x-self.x_g, self.y-self.y_g])) < self.near_thresh and abs(wrapToPi(self.theta - self.theta_g)) < self.at_thresh_theta)
 
     def at_origin(self):
         """
@@ -610,20 +590,20 @@ class Navigator:
         while not rospy.is_shutdown():
             # try to get state information to update self.x, self.y, self.theta
             try:
-		#if self.run_flag:
-		    #print('x and y before')
-		    #print(self.x)
-		    #print(self.y)
-		    #print('theta before run')
-		    #print(self.theta)
+		if self.run_flag:
+		    print('x and y before')
+		    print(self.x)
+		    print(self.y)
+		    print('theta before run')
+		    print(self.theta)
                 self.update_state()
-		#if self.run_flag:
-		    #print('x and y after')
-		    #print(self.x)
-		    #print(self.y)
-		    #print('theta after run update')
-		    #print(self.theta)
-		    #self.run_flag = False
+		if self.run_flag:
+		    print('x and y after')
+		    print(self.x)
+		    print(self.y)
+		    print('theta after run update')
+		    print(self.theta)
+		    self.run_flag = False
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
                 self.current_plan = []
                 rospy.loginfo("Navigator: waiting for state info")
@@ -639,19 +619,13 @@ class Navigator:
                 self.fully_explored = rospy.get_param("~fully_explored")
                 if self.fully_explored and not self.at_origin() and not self.delivery_mode: #in exploration mode, we are notified the environment is fully explored
                     self.mode = Mode.RTB #return to initial position for transition to delivery mode
-		elif self.delivery_mode and len(self.goal_list) > 1:
-		    print("IDLE TO INIT_PICKUP")
-		    self.init_pickup()
-                    #self.mode = Mode.PICKUP 
+		elif self.delivery_mode:
+                    self.mode = Mode.PICKUP 
             ################# ALIGN ####################
             elif self.mode == Mode.ALIGN: #rotating to face the direction indicated by the start of the path
-                #print('entered aligned')
-		if self.aligned():
-		    print('we aligned')
+                if self.aligned():
                     self.current_plan_start_time = rospy.get_rostime()
                     self.switch_mode(Mode.TRACK)
-		elif self.fully_explored:
-		    print('we have not aligned')
                     
             ################# TRACK ####################
             elif self.mode == Mode.TRACK: #use the tracking controller to follow the planned path
@@ -675,47 +649,34 @@ class Navigator:
 		    #print('WOWZA')
 		    #print(np.asarray(self.laser_ranges)[collision_indices])
 		    
-		    collision_object_theta = self.laser_angle_increment*np.argmin(np.asarray(self.laser_ranges))+self.theta
-		    #print('collision object angle with respect to heading')
-		    #print(wrapToPi(self.laser_angle_increment*np.argmin(np.asarray(self.laser_ranges))))
+		    collision_object_theta = wrapToPi(self.laser_angle_increment*np.argmin(np.asarray(self.laser_ranges))+self.theta)
+		    print('collision object angle with respect to heading')
+		    print(wrapToPi(self.laser_angle_increment*np.argmin(np.asarray(self.laser_ranges))))
 		    #weighted_thetas = (1/sum(np.min(np.asarray(self.laser_ranges)[collision_indices])/np.asarray(self.laser_ranges)[collision_indices]))*collision_thetas*((np.min(np.asarray(self.laser_ranges)[collision_indices]))/np.asarray(self.laser_ranges)[collision_indices])   
 		    #collision_object_theta = wrapToPi(wrapToPi(sum(weighted_thetas)) + self.theta)
-		    if np.abs(wrapToPi(collision_object_theta) - wrapToPi(self.theta+np.pi))>np.pi:
-		        #print('CONDITION SATISFIED!!!!!')
-		        #addition = np.pi*np.abs(collision_object_theta - wrapToPi(self.theta-np.pi))
-		        #collision_object_theta = (1./2)*(wrapToTwoPi(collision_object_theta) + wrapToTwoPi(self.theta+np.pi)) + np.pi
-			collision_object_theta = (1./2)*(wrapToPi(collision_object_theta) + wrapToPi(self.theta+np.pi)) + np.pi
-
+		    if np.abs(collision_object_theta - wrapToPi(self.theta-np.pi))>np.pi:
+		        print('CONDITION SATISFIED!!!!!')
+		        addition = np.pi*np.abs(collision_object_theta - wrapToPi(self.theta-np.pi))
 		    else:
-			#addition = np.pi
-			#print('CONDITION NOTTTT SATISFIED!!!!')
-			collision_object_theta = ((1./2)*(wrapToPi(collision_object_theta) + wrapToPi(self.theta+np.pi)))
-                        #addition = 0
+                        addition = 0
 
-                    #collision_object_theta = ((1./2)*(collision_object_theta + wrapToPi(self.theta-np.pi)+addition))*(1+addition) # Have it biased toward trajectory 
-		    #collision_object_theta = (1./2)*(wrapToTwoPi(collision_object_theta) + wrapToTwoPi(self.theta+np.pi))
+                    collision_object_theta = ((1./2)*(collision_object_theta + wrapToPi(self.theta-np.pi)+addition))*(1+addition) # Have it biased toward trajectory 
+
                     ## ALTERNATIVE SCHEME FOR COLLISION AVOIDANCE HEADING ##
-		    #collision_object_theta = wrapToPi(self.theta + wrapToPi((collision_object_theta - self.theta + np.pi)/2))
-		    #print('Looky here!!!!!!!!!!!!!')
-		    #print('wrapped collision object_theta')
-		    #print(wrapToTwoPi(self.laser_angle_increment*np.argmin(np.asarray(self.laser_ranges))+self.theta))
-		    #print('wrapped reverse heading')
-		    #print(wrapToTwoPi(self.theta+np.pi))
-                    
+		    collision_object_theta = wrapToPi(self.theta + ((wrapToPi(self.laser_angle_increment*np.agmin(np.asarray(self.laser_ranges))) + np.pi)/2))
+
+                    #print('LOOKY HERE!')
 	            #print('starting theta:')
 		    #print(self.theta)
-		    #print('collision object_theta before wrap')
-		    #print('collision object_theta')
-		    #print('mean of collision_object_theta and theta plus pi with 2*pi wrap:')
-		    #print(collision_object_theta)
-		    #print('mean without 1*pi wrap')
-		    #print((1./2)*(wrapToPi(collision_object_theta) + wrapToPi(self.theta+np.pi)))
+		    #print('object theta')
+		    #print(wrapToPi(self.laser_angle_increment*np.argmin(np.asarray(self.laser_ranges))))
+		    print('mean of collision_object_theta and theta plus pi:')
+		    print(collision_object_theta)
 		    self.heading_controller.load_goal(collision_object_theta)
 		    start_heading = self.theta
-		    #print('heading')
-		    #print(start_heading)
-		    #print()
-		    collision_object_theta = wrapToPi(collision_object_theta)
+		    print('heading')
+		    print(start_heading)
+		    print()
                     #print("YOU SPIN ME RIGHT ROUND")
                     while not self.aligned_to_object(collision_object_theta):
                         #print(collision_object_theta)
@@ -735,7 +696,7 @@ class Navigator:
                         self.nav_vel_pub.publish(cmd_vel)
                     #print("BACKING UP")    
                     
-		    #self.aligning_to_object_flag = False 
+		    self.aligning_to_object_flag = False 
 		    self.backup(0.99965, 0.5)
                     self.stay_idle()
                     self.replan()
@@ -745,8 +706,8 @@ class Navigator:
                     self.switch_mode(Mode.PARK) #switch to pose controller for final approach
 
                 ## For cats, beers and stop signs
-                #elif self.has_meowed and not self.detectedCat: #we are not detecting a cat or beer and have already responded
-                #    self.has_meowed = False #reset in case a new one is detected
+                elif self.has_meowed and not self.detectedCat: #we are not detecting a cat or beer and have already responded
+                    self.has_meowed = False #reset in case a new one is detected
 
                 ## For marking complete exploration
                 # elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not near a goal
@@ -762,13 +723,8 @@ class Navigator:
             ################# PARK ####################
             elif self.mode == Mode.PARK: #use pose controller for final approach
                 ## for picking up food
-                if self.delivery_mode and len(self.goal_list) >= 1 and self.at_goal(): #we are in delivery mode and this is not the last goal
-                    #self.mode = Mode.PICKUP
-		    print('goal list: ',self.goal_list)
-		    print('PARK TO INIT_PICKUP')
-		    self.init_pickup()
-		    if len(self.goal_list) == 1:
-		        self.delivery_mode = False
+                if self.delivery_mode and len(self.goal_list) > 1 and self.at_goal(): #we are in delivery mode and this is not the last goal
+                    self.mode = Mode.PICKUP
 
                 elif self.at_goal(): #done maneuvering!
                     # forget about goal:
@@ -778,8 +734,8 @@ class Navigator:
                     self.switch_mode(Mode.IDLE) #await further instructions
 
                 # For cats, beers and stop signs """                    
-                #elif self.has_meowed and not self.detectedCat: #we are not detecting a cat or beer and have already responded
-                    #self.has_meowed = False #reset in case a new one is detected
+                elif self.has_meowed and not self.detectedCat: #we are not detecting a cat or beer and have already responded
+                    self.has_meowed = False #reset in case a new one is detected
 
                 #For marking complete exploration"""
                 # elif self.fully_explored and not self.delivery_mode: #environment is fully explored but we are not at the goal
@@ -805,33 +761,20 @@ class Navigator:
             
 ##EXTENSION ################# MEOW ####################         
             elif self.mode == Mode.MEOW:
-                #self.messages.publish(cute) #publish the miao message to a dedicated topic
-                #self.has_meowed = True #to ensure we do not respond repeatedly t
+                self.messages.publish(mensaje) #publish the miao message to a dedicated topic
+                self.has_meowed = True #to ensure we do not respond repeatedly t
                 self.mode = Mode.TRACK # resume movement (without aligning with starting angle)
             
             ################# PICKUP #################### 
             elif self.mode == Mode.PICKUP:
                 if not self.has_picked_up():
                     self.stay_idle()
-		elif len(self.goal_list) < 1:
-		    print('goal list: ',self.goal_list)
-		    self.mode = Mode.RTB
-		    self.delivery_mode = False
                 else:
-		    print()
-		    print('goal list right before pop')
-		    print(self.goal_list)
                     self.x_g = self.goal_list[0][0] #copy the contents of the first tuple as our next goal
                     self.y_g = self.goal_list[0][1]
                     self.theta_g = self.goal_list[0][2]
                     self.goal_list.pop(0) #remove the first tuple from our list of goals
-		    print('goal list right after pop')
-		    print(self.goal_list)
-		    print('INFORMATION ABOUT POPPED LIST ABOVE')
-		    print()
-		    print('Pickup complete! Updated goal list length: ',len(self.goal_list))
-
-                    #self.mode = Mode.ALIGN #resume movement (from beginning)
+                    self.mode = Mode.ALIGN #resume movement (from beginning)
                     self.replan()
 
             ################# RETURN TO BASE (RTB) #################### 
@@ -839,15 +782,14 @@ class Navigator:
                 self.x_g = self.home[0]
                 self.y_g = self.home[1]
                 self.theta_g = self.home[2] #set next goal position to be the point of orign
-                #self.mode = Mode.ALIGN #resume movement
+                self.mode = Mode.ALIGN #resume movement
                 self.replan()
                 print("RTTTTTTBBBBBB")
             
             ################# START DELIVERY #################### 
             elif self.mode == Mode.START_DELIVERY: #this state transitions to delivery mode
                 self.delivery_mode = True #switch to delivery mode
-                #self.mode = Mode.PICKUP
-		print('START DELIVERY TO INIT_PICKUP')
+                self.mode = Mode.PICKUP
                 self.init_pickup()
             
             rospy.loginfo(self.mode)

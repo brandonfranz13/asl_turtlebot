@@ -18,9 +18,9 @@
         </geometry>
 	<material>
 	  <script>
-	    <uri>model://vendor1/materials/scripts</uri>
-	    <uri>model://vendor1/materials/textures</uri>
-	    <name>bird</name>
+	    <uri>model://vendor7/materials/scripts</uri>
+	    <uri>model://vendor7/materials/textures</uri>
+	    <name>cat</name>
 	  </script>
 	</material>
       </visual>

@@ -1,4 +1,5 @@
-material dog
+
+material cat
 {
   technique
   {
@@ -7,7 +8,7 @@ material dog
       texture_unit
       {
 	    
-        texture ../textures/dog.jpg
+        texture ../textures/cat.jpg
 	   
       }
     }

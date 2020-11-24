@@ -1273,10 +1273,10 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <state world_name='default'>
-      <sim_time>6143 153000000</sim_time>
-      <real_time>41 15771761</real_time>
-      <wall_time>1605727078 67223776</wall_time>
-      <iterations>37827</iterations>
+      <sim_time>6548 285000000</sim_time>
+      <real_time>118 783504602</real_time>
+      <wall_time>1605892713 955236526</wall_time>
+      <iterations>118426</iterations>
       <model name='Color Tutorial Model'>
         <pose frame=''>0.000917 0.301946 0.271113 0 -0 0</pose>
         <scale>0.311502 0.524048 0.524048</scale>
@@ -1288,20 +1288,30 @@
         </link>
       </model>
       <model name='Color Tutorial Model_0'>
-        <pose frame=''>0.330571 2.7905 0.250226 0 0 -0.856941</pose>
+        <pose frame=''>0.323238 2.79896 0.250226 0 0 -0.856941</pose>
         <scale>0.261053 0.494387 0.494387</scale>
         <link name='robot_link'>
-          <pose frame=''>0.330571 2.7905 0.250226 0 0 -0.856941</pose>
+          <pose frame=''>0.323238 2.79896 0.250226 0 0 -0.856941</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
-      <model name='Color Tutorial Model_11'>
-        <pose frame=''>2.00865 2.0615 0.295979 0 0 -0.727821</pose>
-        <scale>0.150221 0.399819 0.399819</scale>
+      <model name='Color Tutorial Model_1'>
+        <pose frame=''>2.03958 2.02775 0.312431 0 0 -0.720458</pose>
+        <scale>0.135324 0.419009 0.419009</scale>
         <link name='robot_link'>
-          <pose frame=''>2.00865 2.0615 0.295979 0 0 -0.727821</pose>
+          <pose frame=''>2.03958 2.02775 0.312431 0 0 -0.720458</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='Color Tutorial Model_2'>
+        <pose frame=''>2.9121 2.48053 0.289317 0 0 -1.56234</pose>
+        <scale>0.122152 0.503135 0.503135</scale>
+        <link name='robot_link'>
+          <pose frame=''>2.9121 2.48053 0.289317 0 0 -1.56234</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -1317,11 +1327,11 @@
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
-      <model name='Color Tutorial Model_4'>
-        <pose frame=''>2.39303 3.01622 0.257642 0 0 -1.58122</pose>
-        <scale>0.247952 0.507363 0.507363</scale>
+      <model name='Color Tutorial Model_5'>
+        <pose frame=''>2.34259 2.98451 0.317536 0 0 -1.54287</pose>
+        <scale>0.174527 0.462862 0.462862</scale>
         <link name='robot_link'>
-          <pose frame=''>2.39303 3.01622 0.257642 0 0 -1.58122</pose>
+          <pose frame=''>2.34259 2.98451 0.317536 0 0 -1.54287</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -1338,20 +1348,20 @@
         </link>
       </model>
       <model name='Stop Sign'>
-        <pose frame=''>3.55 1.4 0 1.4e-05 4e-06 3.14159</pose>
+        <pose frame=''>3.55 1.4 -8e-06 -0.000148 -3.4e-05 3.14159</pose>
         <scale>0.204001 0.204001 0.204001</scale>
         <link name='link'>
-          <pose frame=''>3.55 1.4 0 1.4e-05 4e-06 3.14159</pose>
+          <pose frame=''>3.55 1.4 -8e-06 -0.000148 -3.4e-05 3.14159</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 1e-06 0.104496 0.109207 0.307113 0</acceleration>
-          <wrench>0 1e-06 0.104496 0 -0 0</wrench>
+          <acceleration>0 0 -9.8 0 -0 0</acceleration>
+          <wrench>0 0 -9.8 0 -0 0</wrench>
         </link>
       </model>
       <model name='beer'>
-        <pose frame=''>3.5463 0.070823 -2e-06 -1e-06 -1e-06 2.24969</pose>
+        <pose frame=''>3.5463 0.07082 -2e-06 -1e-06 -0 2.24965</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>3.5463 0.070823 0.114998 -1e-06 -1e-06 2.24969</pose>
+          <pose frame=''>3.5463 0.07082 0.114998 -1e-06 -0 2.24965</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 -9.8 0 -0 0</acceleration>
           <wrench>0 0 -3.822 0 -0 0</wrench>
@@ -1643,7 +1653,7 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose frame=''>4.48065 3.63538 3.43789 0 0.96502 -1.74255</pose>
+        <pose frame=''>7.74894 -1.96476 4.64983 0 0.70902 2.38463</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
@@ -1747,49 +1757,6 @@
       </link>
       <pose frame=''>2.25135 -0.844486 0 0 -0 0</pose>
     </model>
-    <model name='Color Tutorial Model_4'>
-      <static>1</static>
-      <link name='robot_link'>
-        <collision name='body_collision'>
-          <geometry>
-            <box>
-              <size>0.099999 1 1</size>
-            </box>
-          </geometry>
-          <max_contacts>10</max_contacts>
-          <surface>
-            <contact>
-              <ode/>
-            </contact>
-            <bounce/>
-            <friction>
-              <torsional>
-                <ode/>
-              </torsional>
-              <ode/>
-            </friction>
-          </surface>
-        </collision>
-        <visual name='body_visual'>
-          <geometry>
-            <box>
-              <size>0.099999 1 1</size>
-            </box>
-          </geometry>
-          <material>
-            <script>
-              <uri>model://vendor1/materials/scripts</uri>
-              <uri>model://vendor1/materials/textures</uri>
-              <name>zebra</name>
-            </script>
-          </material>
-        </visual>
-        <self_collide>0</self_collide>
-        <kinematic>0</kinematic>
-        <gravity>1</gravity>
-      </link>
-      <pose frame=''>0.80836 -1.50547 0 0 -0 0</pose>
-    </model>
     <model name='Color Tutorial Model_7'>
       <static>1</static>
       <link name='robot_link'>
@@ -1832,49 +1799,6 @@
         <gravity>1</gravity>
       </link>
       <pose frame=''>-1.05323 -0.866235 0 0 -0 0</pose>
-    </model>
-    <model name='Color Tutorial Model_11'>
-      <static>1</static>
-      <link name='robot_link'>
-        <collision name='body_collision'>
-          <geometry>
-            <box>
-              <size>0.100006 1 1</size>
-            </box>
-          </geometry>
-          <max_contacts>10</max_contacts>
-          <surface>
-            <contact>
-              <ode/>
-            </contact>
-            <bounce/>
-            <friction>
-              <torsional>
-                <ode/>
-              </torsional>
-              <ode/>
-            </friction>
-          </surface>
-        </collision>
-        <visual name='body_visual'>
-          <geometry>
-            <box>
-              <size>0.100006 1 1</size>
-            </box>
-          </geometry>
-          <material>
-            <script>
-              <uri>model://vendor5/materials/scripts</uri>
-              <uri>model://vendor5/materials/textures</uri>
-              <name>dog</name>
-            </script>
-          </material>
-        </visual>
-        <self_collide>0</self_collide>
-        <kinematic>0</kinematic>
-        <gravity>1</gravity>
-      </link>
-      <pose frame=''>1.64067 -2.46462 0 0 -0 0</pose>
     </model>
     <model name='Color Tutorial Model_0'>
       <static>1</static>
@@ -1961,6 +1885,135 @@
         <gravity>1</gravity>
       </link>
       <pose frame=''>0.711569 -0.760886 0 0 -0 0</pose>
+    </model>
+    <model name='Color Tutorial Model_1'>
+      <static>1</static>
+      <link name='robot_link'>
+        <collision name='body_collision'>
+          <geometry>
+            <box>
+              <size>0.099997 1 1</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='body_visual'>
+          <geometry>
+            <box>
+              <size>0.099997 1 1</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://vendor5/materials/scripts</uri>
+              <uri>model://vendor5/materials/textures</uri>
+              <name>elephant</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <kinematic>0</kinematic>
+        <gravity>1</gravity>
+      </link>
+      <pose frame=''>5.23364 0.433448 0 0 -0 0</pose>
+    </model>
+    <model name='Color Tutorial Model_2'>
+      <static>1</static>
+      <link name='robot_link'>
+        <collision name='body_collision'>
+          <geometry>
+            <box>
+              <size>0.099998 0.999998 0.999998</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='body_visual'>
+          <geometry>
+            <box>
+              <size>0.099998 0.999998 0.999998</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://vendor7/materials/scripts</uri>
+              <uri>model://vendor7/materials/textures</uri>
+              <name>cat</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <kinematic>0</kinematic>
+        <gravity>1</gravity>
+      </link>
+      <pose frame=''>2.1252 4.22936 0 0 -0 0</pose>
+    </model>
+    <model name='Color Tutorial Model_5'>
+      <static>1</static>
+      <link name='robot_link'>
+        <collision name='body_collision'>
+          <geometry>
+            <box>
+              <size>0.100001 1 1</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='body_visual'>
+          <geometry>
+            <box>
+              <size>0.100001 1 1</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://vendor1/materials/scripts</uri>
+              <uri>model://vendor1/materials/textures</uri>
+              <name>bird</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <kinematic>0</kinematic>
+        <gravity>1</gravity>
+      </link>
+      <pose frame=''>-1.35663 3.65627 0 0 -0 0</pose>
     </model>
   </world>
 </sdf>

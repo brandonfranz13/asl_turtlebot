@@ -20,7 +20,7 @@
 	  <script>
 	    <uri>model://vendor5/materials/scripts</uri>
 	    <uri>model://vendor5/materials/textures</uri>
-	    <name>dog</name>
+	    <name>elephant</name>
 	  </script>
 	</material>
       </visual>
